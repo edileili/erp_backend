@@ -1,1 +1,7 @@
 .env
+
+node_modules/
+gateway/node_modules/
+services/core/node_modules/
+services/tickets/node_modules/
+node_modules

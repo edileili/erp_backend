@@ -1,4 +1,4 @@
-const PermisoModel = require('../models/permiso.model');
+const PermisoModel = require('../../services/core/src/models/permiso.model');
 
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
   statusCode,

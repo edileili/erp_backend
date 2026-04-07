@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const UsuarioModel = require('../models/usuario.model');
 const PermisoModel = require('../models/permiso.model');
-const pool = require('../config/database');
+const db = require('../../../shared/db-client');
 
 // ── Helper: construye respuesta estandarizada ──────────────────────────────
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
@@ -16,7 +16,7 @@ const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
 // ── GET /api/admin/usuarios ────────────────────────────────────────────────
 const listarUsuarios = async (req, res) => {
     try {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono, created_at
        FROM public.usuarios ORDER BY id`
         );
@@ -143,7 +143,7 @@ const eliminarUsuario = async (req, res) => {
             }));
         }
 
-        const { rowCount } = await pool.query(
+        const { rowCount } = await db.query(
             'DELETE FROM public.usuarios WHERE id = $1',
             [req.params.id]
         );

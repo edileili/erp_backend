@@ -1,10 +1,10 @@
-const pool = require('../config/database');
+const db = require('../../../shared/db-client');
 
 const PermisoModel = {
 
     // ── Todos los permisos del sistema ─────────────────────────────────────────
     async findAll() {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             'SELECT * FROM public.permisos ORDER BY id'
         );
         return rows;
@@ -12,7 +12,7 @@ const PermisoModel = {
 
     // ── Permisos que tiene un usuario específico ───────────────────────────────
     async findByUsuario(usuarioId) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT p.id, p.nombre, p.descripcion
             FROM public.permisos p
             INNER JOIN public.permisos_generales up ON up.permiso_id = p.id
@@ -25,7 +25,7 @@ const PermisoModel = {
 
     // ── Asignar un permiso a un usuario ───────────────────────────────────────
     async asignar(usuarioId, permisoId) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `INSERT INTO public.permisos_generales (usuario_id, permiso_id)
             VALUES ($1, $2)
             ON CONFLICT DO NOTHING
@@ -37,7 +37,7 @@ const PermisoModel = {
 
     // ── Revocar un permiso de un usuario ──────────────────────────────────────
     async revocar(usuarioId, permisoId) {
-        const { rowCount } = await pool.query(
+        const { rowCount } = await db.query(
             `DELETE FROM public.permisos_generales
             WHERE usuario_id = $1 AND permiso_id = $2`,
             [usuarioId, permisoId]
@@ -47,7 +47,7 @@ const PermisoModel = {
 
     // ── Reemplazar TODOS los permisos de un usuario ───────────────────────────
     async sincronizar(usuarioId, permisoIds = []) {
-        const client = await pool.connect();
+        const client = await db.connect();
         try {
             await client.query('BEGIN');
             await client.query(
@@ -71,7 +71,7 @@ const PermisoModel = {
 
     // ── Verificar si un usuario tiene un permiso específico ───────────────────
     async tienePermiso(usuarioId, nombrePermiso) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 1 FROM public.permisos_generales up
             INNER JOIN public.permisos p ON p.id = up.permiso_id
             WHERE up.usuario_id = $1 AND p.nombre = $2

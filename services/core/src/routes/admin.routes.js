@@ -7,9 +7,9 @@ const {
   listarPermisos, actualizarPermisos,
 } = require('../controllers/admin.controller');
 
-const authMiddleware   = require('../middlewares/auth.middleware');
-const permiso          = require('../middlewares/permiso.middleware');
-const validate         = require('../middlewares/validate.middleware');
+const authMiddleware   = require('../../../../gateway/middlewares/auth.middleware');
+const permiso          = require('../../../../gateway/middlewares/permiso.middleware');
+const validate         = require('../../../../gateway/middlewares/validate.middleware');
 const { registroSchema, actualizarSchema } = require('../schemas/usuario.schema');
 
 // ── CRUD Usuarios ──────────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
-const pool = require('../config/database');
+const db = require('../../../shared/db-client');
 
 const UsuarioModel = {
   // ── Buscar por email (para login) ──────────────────────────────────────────
   async findByEmail(email) {
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       'SELECT * FROM public.usuarios WHERE email = $1 LIMIT 1',
       [email]
     );
@@ -12,7 +12,7 @@ const UsuarioModel = {
 
   // ── Buscar por ID (sin contraseña) ─────────────────────────────────────────
   async findById(id) {
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `SELECT id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono, created_at
        FROM public.usuarios WHERE id = $1 LIMIT 1`,
       [id]
@@ -22,7 +22,7 @@ const UsuarioModel = {
 
   // ── Crear usuario ──────────────────────────────────────────────────────────
   async create({ usuario, email, contrasenia, nombre_com, direccion, fecha_nacimiento, telefono }) {
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `INSERT INTO public.usuarios (usuario, email, contrasenia, nombre_com, direccion, fecha_nacimiento, telefono)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono, created_at`,
@@ -50,7 +50,7 @@ const UsuarioModel = {
         (SELECT nombre FROM public.permisos WHERE id = permiso_id) AS nombre;
       `;
 
-      const { rows } = await pool.query(query, [usuario_id, permisosNombres]);
+      const { rows } = await db.query(query, [usuario_id, permisosNombres]);
       return rows;
   },
 
@@ -62,7 +62,7 @@ const UsuarioModel = {
     // Construye dinámicamente: SET campo1 = $1, campo2 = $2 ...
     const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
 
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       `UPDATE public.usuarios SET ${setClause}
        WHERE id = $${keys.length + 1}
        RETURNING id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono`,
@@ -73,7 +73,7 @@ const UsuarioModel = {
 
   // ── Verificar si ya existe email o usuario ─────────────────────────────────
   async existeDuplicado(email, usuario) {
-    const { rows } = await pool.query(
+    const { rows } = await db.query(
       'SELECT id FROM public.usuarios WHERE email = $1 OR usuario = $2 LIMIT 1',
       [email, usuario]
     );

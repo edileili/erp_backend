@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install:all": "npm i --prefix gateway && npm i --prefix services/core && npm i --prefix services/tickets",
+    "dev": "concurrently -n gateway,core,tickets -c cyan,green,yellow \"npm run dev --prefix gateway\" \"npm run dev --prefix services/core\" \"npm run dev --prefix services/tickets\"",
+    "start": "concurrently -n gateway,core,tickets -c cyan,green,yellow \"npm start --prefix gateway\" \"npm start --prefix services/core\" \"npm start --prefix services/tickets\""
   },
   "keywords": [],
   "author": "",
@@ -12,6 +15,7 @@
   "dependencies": {
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
+    "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -20,5 +24,8 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

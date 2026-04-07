@@ -1,4 +1,4 @@
-const pool = require('../config/database');
+const db = require('../../../shared/db-client');
 
 // ID del estado "cerrado" en tu tabla estados — ajusta si es diferente
 const ESTADO_CERRADO_ID = 5;
@@ -8,7 +8,7 @@ const TicketModel = {
     // ─── READ ────────────────────────────────────────────────────────────────
 
     async findById(id) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 
                 t.id, 
                 t.titulo, 
@@ -27,36 +27,15 @@ const TicketModel = {
             LEFT JOIN public.usuarios u_asig ON t.asignado_id = u_asig.id
             JOIN public.estados     est     ON t.estado_id   = est.id
             JOIN public.prioridades prio    ON t.prioridad_id = prio.id
-            WHERE t.id = $1 AND t.eliminado = false`,
+            WHERE t.id = $1`,
             [id]
         );
         return rows[0] || null;
     },
 
     async findAll({ grupo_id, estado_id, prioridad_id, asignado_id } = {}) {
-        const conditions = ['t.eliminado = false'];
-        const values = [];
 
-        if (grupo_id) {
-            values.push(grupo_id);
-            conditions.push(`t.grupo_id = $${values.length}`);
-        }
-        if (estado_id) {
-            values.push(estado_id);
-            conditions.push(`t.estado_id = $${values.length}`);
-        }
-        if (prioridad_id) {
-            values.push(prioridad_id);
-            conditions.push(`t.prioridad_id = $${values.length}`);
-        }
-        if (asignado_id) {
-            values.push(asignado_id);
-            conditions.push(`t.asignado_id = $${values.length}`);
-        }
-
-        const where = conditions.join(' AND ');
-
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 
                 t.id,
                 t.titulo,
@@ -71,9 +50,9 @@ const TicketModel = {
             LEFT JOIN public.usuarios u_asig ON t.asignado_id  = u_asig.id
             JOIN public.estados     est     ON t.estado_id    = est.id
             JOIN public.prioridades prio    ON t.prioridad_id = prio.id
-            WHERE ${where}
+            WHERE g.id = $1, est.id = $2, prio.id = $3, u_asig.id = $4
             ORDER BY t.creado_fecha DESC`,
-            values
+            [grupo_id, estado_id, prioridad_id, asignado_id]
         );
         return rows;
     },
@@ -88,7 +67,7 @@ const TicketModel = {
 
     // Tickets sin asignar (asignado_id es NULL en BD)
     async findSinAsignar(grupo_id = null) {
-        const conditions = ['t.asignado_id IS NULL', 't.eliminado = false'];
+        const conditions = ['t.asignado_id IS NULL'];
         const values = [];
 
         if (grupo_id) {
@@ -96,7 +75,7 @@ const TicketModel = {
             conditions.push(`t.grupo_id = $${values.length}`);
         }
 
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 
                 t.id,
                 t.titulo,
@@ -118,9 +97,9 @@ const TicketModel = {
     // ─── CREATE ──────────────────────────────────────────────────────────────
 
     async create({ titulo, descripcion, grupo_id, creador_id, estado_id, prioridad_id, asignado_id = null }) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `INSERT INTO public.tickets
-                (titulo, descripcion, grupo_id, creador_id, estado_id, prioridad_id, asignado_id, creado_fecha, fecha_cierre, eliminado)
+                (titulo, descripcion, grupo_id, creador_id, estado_id, prioridad_id, asignado_id, creado_fecha, fecha_cierre)
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NULL, false)
              RETURNING id, titulo, descripcion, grupo_id, creador_id, estado_id, prioridad_id, asignado_id, creado_fecha`,
             [titulo, descripcion, grupo_id, creador_id, estado_id, prioridad_id, asignado_id]
@@ -143,10 +122,10 @@ const TicketModel = {
         const values = Object.values(camposFiltrados);
         const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
 
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `UPDATE public.tickets
              SET ${setClause}
-             WHERE id = $${keys.length + 1} AND eliminado = false
+             WHERE id = $${keys.length + 1}
              RETURNING id, titulo, descripcion, estado_id, prioridad_id, asignado_id`,
             [...values, id]
         );
@@ -156,11 +135,11 @@ const TicketModel = {
     async cambiarEstado(id, estado_id) {
         const esCerrado = estado_id === ESTADO_CERRADO_ID;
 
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `UPDATE public.tickets
              SET estado_id   = $1,
                  fecha_cierre = ${esCerrado ? 'NOW()' : 'NULL'}
-             WHERE id = $2 AND
+             WHERE id = $2
              RETURNING id, titulo, estado_id, fecha_cierre`,
             [estado_id, id]
         );
@@ -169,7 +148,7 @@ const TicketModel = {
 
     /*
     async softDelete(id) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `UPDATE public.tickets
              SET eliminado = true
              WHERE id = $1 AND eliminado = false

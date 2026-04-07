@@ -1,8 +1,8 @@
-const pool = require('../config/database');
+const db = require('../../../shared/db-client');
 
 const GrupoModel = {
     async findById(id) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 
                 g.id, 
                 g.nombre, 
@@ -20,7 +20,7 @@ const GrupoModel = {
     },
 
     async create({ nombre, descripcion, creador_id }) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `INSERT INTO public.grupos (nombre, descripcion, creador_id, creado_fecha)
              VALUES ($1, $2, $3, NOW())
              RETURNING id, nombre, descripcion, creador_id, creado_fecha`,
@@ -35,7 +35,7 @@ const GrupoModel = {
 
         const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
 
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `UPDATE public.grupos SET ${setClause}
              WHERE id = $${keys.length + 1}
              RETURNING id, nombre, descripcion, creador_id`,
@@ -45,7 +45,7 @@ const GrupoModel = {
     },
 
     async findAll() {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT 
                 g.id,
                 g.nombre,
@@ -63,7 +63,7 @@ const GrupoModel = {
     },
 
     async getMiembros(grupo_id) {
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `SELECT DISTINCT
                 u.id,
                 u.nombre_com,
@@ -83,7 +83,7 @@ const GrupoModel = {
     /*
     async softDelete(id) {
         // Verifica que no tenga tickets activos antes de eliminar
-        const { rows: activos } = await pool.query(
+        const { rows: activos } = await db.query(
             `SELECT COUNT(*) AS total
              FROM public.tickets
              WHERE grupo_id = $1 AND eliminado = false`,
@@ -94,7 +94,7 @@ const GrupoModel = {
             throw new Error('No se puede eliminar un grupo con tickets activos');
         }
 
-        const { rows } = await pool.query(
+        const { rows } = await db.query(
             `UPDATE public.grupos
              SET eliminado = true
              WHERE id = $1 AND eliminado = false

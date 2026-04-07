@@ -2,8 +2,8 @@ const express = require('express');
 const router  = express.Router();
 
 const { registro, login, perfil, actualizar } = require('../controllers/usuario.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
-const validate       = require('../middlewares/validate.middleware');
+const authMiddleware = require('../../../../gateway/middlewares/auth.middleware');
+const validate       = require('../../../../gateway/middlewares/validate.middleware');
 const { registroSchema, loginSchema, actualizarSchema } = require('../schemas/usuario.schema');
 
 // ── Rutas públicas ─────────────────────────────────────────────────────────
