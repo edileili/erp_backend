@@ -4,9 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "install:all": "npm i --prefix gateway && npm i --prefix services/core && npm i --prefix services/tickets",
-    "dev": "concurrently -n gateway,core,tickets -c cyan,green,yellow \"npm run dev --prefix gateway\" \"npm run dev --prefix services/core\" \"npm run dev --prefix services/tickets\"",
-    "start": "concurrently -n gateway,core,tickets -c cyan,green,yellow \"npm start --prefix gateway\" \"npm start --prefix services/core\" \"npm start --prefix services/tickets\""
+    "install:all": "npm i --prefix gateway && npm i --prefix services/core && npm i --prefix services/groups && npm i --prefix services/tickets",
+    "dev": "concurrently -n gateway,core,groups,tickets -c cyan,green,magenta,yellow \"npm run dev --prefix gateway\" \"npm run dev --prefix services/core\" \"npm run dev --prefix services/groups\" \"npm run dev --prefix services/tickets\"",
+    "start": "concurrently -n gateway,core,groups,tickets -c cyan,green,magenta,yellow \"npm start --prefix gateway\" \"npm start --prefix services/core\" \"npm start --prefix services/groups\" \"npm start --prefix services/tickets\""
   },
   "keywords": [],
   "author": "",

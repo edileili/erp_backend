@@ -79,6 +79,7 @@ const start = async () => {
 
     const CORE = `http://localhost:${process.env.CORE_PORT || 3001}`;
     const TICKETS = `http://localhost:${process.env.TICKETS_PORT || 3002}`;
+    const GRUPOS = `http://localhost:${process.env.GROUPS_PORT || 3003}`;
 
     //Rutas públicas
     fastify.all('/api/auth/*', proxyTo(CORE));
@@ -92,8 +93,8 @@ const start = async () => {
     //Rutas protegidas
     fastify.all('/api/usuarios', proxyTo(CORE));
     fastify.all('/api/usuarios/*', proxyTo(CORE));
-    fastify.all('/api/grupos', proxyTo(CORE));
-    fastify.all('/api/grupos/*', proxyTo(CORE));
+    fastify.all('/api/grupos', proxyTo(GRUPOS));
+    fastify.all('/api/grupos/*', proxyTo(GRUPOS));
     fastify.all('/api/admin', proxyTo(CORE));
     fastify.all('/api/admin/*', proxyTo(CORE));
     fastify.all('/api/tickets', proxyTo(TICKETS));
