@@ -1,0 +1,7 @@
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/usuarios/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:07:15.230Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:07:27.576Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:08:03.293Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:12:22.509Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:13:19.954Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:16:31.500Z"}
+{"level":"info","message":{"ip":"::1","method":"POST","url":"/api/auth/login","userAgent":"PostmanRuntime/7.51.1"},"timestamp":"2026-04-08T00:38:17.093Z"}

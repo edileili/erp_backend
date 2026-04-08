@@ -2,7 +2,7 @@ const express = require('express');
 const router  = express.Router();
 
 const { findAll, findById, getMiembros, create, update } = require('../controllers/grupo.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const authMiddleware = require('../../../../gateway/middlewares/auth.middleware');
 
 router.get('/', findAll);
 router.get('/:id', findById);

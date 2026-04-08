@@ -1,34 +1,19 @@
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
 
-/**
- * Middleware: verifica el JWT del header Authorization.
- * Si es válido, adjunta el payload decodificado en req.usuario.
- *
- * El token contiene: { id, usuario, email, nombre_com }
- */
-const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
+module.exports = async (request, reply) => {
+    const header = request.headers['authorization'] || '';
+    const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      ok: false,
-      mensaje: 'Token no proporcionado o formato inválido',
-    });
-  }
+    if (!token) {
+        return reply.code(401).send({ error: 'Token requerido' });
+    }
 
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = payload; // { id, usuario, email, nombre_com, iat, exp }
-    next();
-  } catch (err) {
-    const mensaje =
-      err.name === 'TokenExpiredError' ? 'Token expirado' : 'Token inválido';
-
-    return res.status(401).json({ ok: false, mensaje });
-  }
+    try {
+        const user = jwt.verify(token, process.env.JWT_SECRET);
+        request.headers['x-user-id']   = String(user.id);
+        request.headers['x-user-role'] = String(user.rol);
+        request.user = user;
+    } catch {
+        return reply.code(401).send({ error: 'Token inválido o expirado' });
+    }
 };
-
-module.exports = authMiddleware;
