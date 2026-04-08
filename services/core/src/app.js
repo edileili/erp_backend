@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 
 // Rutas (igual que antes, sin cambios en las rutas mismas)
+const authRoutes = require('./routes/auth.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
 const gruposRoutes   = require('./routes/grupos.routes');
 const adminRoutes    = require('./routes/admin.routes');
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 });
 
 // ─── Rutas (sin prefijo /api porque el Gateway ya lo maneja) ─────────────────
+app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/grupos',   gruposRoutes);
 app.use('/api/admin',    adminRoutes);

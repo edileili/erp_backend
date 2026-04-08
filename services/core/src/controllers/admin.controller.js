@@ -4,21 +4,26 @@ const PermisoModel = require('../models/permiso.model');
 const db = require('../../../shared/db-client');
 
 // ── Helper: construye respuesta estandarizada ──────────────────────────────
-const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
-    statusCode,
-    inOpCode,
-    message,
-    data,
-    total: data.length,
-    timestamp: new Date().toISOString(),
-});
+const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
+    const generalData = data.length > 0
+        ? data.map(item => ({ message, ...item}))
+        : [{message}];
+    
+    return {
+        statusCode,
+        inOpCode,
+        data: generalData,
+        total: generalData.length,
+        timestamp: new Date().toISOString(),
+    };
+};
 
 // ── GET /api/admin/usuarios ────────────────────────────────────────────────
 const listarUsuarios = async (req, res) => {
     try {
         const { rows } = await db.query(
             `SELECT id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono, created_at
-       FROM public.usuarios ORDER BY id`
+            FROM public.usuarios ORDER BY id`
         );
 
         return res.status(200).json(buildResponse({

@@ -34,9 +34,25 @@ proxy.on('error', (err, req, res) => {
     }
 });
 
+proxy.on('proxyReq', (proxyReq, req, res, options) => {
+    if(req.body) {
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+
+        proxyReq.write(bodyData);
+        proxyReq.end();
+    }
+});
+
 function proxyTo(target) {
     return (request, reply) => {
-        proxy.web(request.raw, reply.raw, { target });
+        request.raw.body = request.body;
+
+        proxy.web(request.raw, reply.raw, { 
+            target,
+            changeOrigin: true
+        });
     };
 }
 

@@ -15,14 +15,19 @@ const generarToken = (usuario, permisos = []) =>
   );
 
 // ── Helper: construye respuesta estandarizada ──────────────────────────────
-const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
-  statusCode,
-  inOpCode,
-  message,
-  data,
-  total: data.length,
-  timestamp: new Date().toISOString(),
-});
+const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
+  const generalData = data.length > 0
+    ? data.map(item => ({ message, ...item}))
+    : [{message}];
+  
+  return {
+    statusCode,
+    inOpCode,
+    data: generalData,
+    total: generalData.length,
+    timestamp: new Date().toISOString(),
+  };
+};
 
 // ── POST /api/usuarios/registro ────────────────────────────────────────────
 const registro = async (req, res) => {
@@ -92,7 +97,8 @@ const login = async (req, res) => {
     const { contrasenia: _, ...usuarioSinPassword } = usuario;
 
     return res.status(200).json(buildResponse({
-      statusCode: 200, inOpCode: 'OK',
+      statusCode: 200, 
+      inOpCode: 'OK',
       message: 'Login exitoso',
       data: [{
         accessToken: token,

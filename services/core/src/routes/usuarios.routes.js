@@ -7,8 +7,8 @@ const validate       = require('../../../../gateway/middlewares/validate.middlew
 const { registroSchema, loginSchema, actualizarSchema } = require('../schemas/usuario.schema');
 
 // ── Rutas públicas ─────────────────────────────────────────────────────────
-router.post('/registro', validate(registroSchema), registro);
-router.post('/login',    validate(loginSchema),    login);
+//('/registro', validate(registroSchema), registro);
+//('/login',    validate(loginSchema),    login);
 
 // ── Rutas protegidas (requieren JWT) ───────────────────────────────────────
 router.get('/perfil',  authMiddleware, perfil);
