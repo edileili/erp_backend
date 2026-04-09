@@ -1,17 +1,13 @@
 const express = require('express');
 const router  = express.Router();
 
-const { registro, login, perfil, actualizar } = require('../controllers/usuario.controller');
-const authMiddleware = require('../../../../gateway/middlewares/auth.middleware');
+const {perfil, actualizar } = require('../controllers/usuario.controller');
+const authMiddleware = require('../middlewares/auth.middleware');
 const validate       = require('../../../../gateway/middlewares/validate.middleware');
-const { registroSchema, loginSchema, actualizarSchema } = require('../schemas/usuario.schema');
-
-// ── Rutas públicas ─────────────────────────────────────────────────────────
-//('/registro', validate(registroSchema), registro);
-//('/login',    validate(loginSchema),    login);
+const { actualizarSchema } = require('../schemas/usuario.schema');
 
 // ── Rutas protegidas (requieren JWT) ───────────────────────────────────────
-router.get('/perfil',  authMiddleware, perfil);
-router.put('/perfil',  authMiddleware, validate(actualizarSchema), actualizar);
+router.get('/perfil', authMiddleware, perfil);
+router.put('/perfil', authMiddleware, validate(actualizarSchema), actualizar);
 
 module.exports = router;

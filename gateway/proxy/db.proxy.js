@@ -9,7 +9,9 @@ function getOperation(query = '') {
 }
 
 module.exports = async (request, reply) => {
-    const { query, params = []} = request.body;
+    const raw = request.body;
+    const body = Buffer.isBuffer(raw) ? JSON.parse(raw.toString()) : raw;
+    const { query, params = []} = body;
 
     if(!query || typeof query !== 'string') {
         return reply.code(400).send({error: 'Query inválida'});
