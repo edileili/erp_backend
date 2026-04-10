@@ -82,7 +82,8 @@ const getMiembros = async (req, res) => {
 
 const create = async (req, res) => {
     try {
-        const {nombre, descripcion, creador_id} = req.body;
+        const {nombre, descripcion} = req.body;
+        const creador_id = req.usuario.id;
         if (!nombre || !creador_id) {
             return res.status(400).json(buildResponse({
                 statusCode: 400,
@@ -95,6 +96,34 @@ const create = async (req, res) => {
             statusCode: 201,
             inOpCode: 'CREATED',
             message: 'Grupo creado exitosamente',
+            data: [nuevo],
+        }));
+    } catch (err) {
+        console.error('Error en solicitud:', err);
+        return res.status(500).json(buildResponse({
+        statusCode: 500,
+        inOpCode: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+        }));
+    }
+}
+
+const newMiembro = async (req, res) => {
+    try {
+        const idGrupo = req.params.id;
+        const {email} = req.body;
+        if (!idGrupo || !email) {
+            return res.status(400).json(buildResponse({
+                statusCode: 400,
+                inOpCode: 'BAD_REQUEST',
+                message: 'Datos incompletos',
+            }));
+        }
+        const nuevo = await GrupoModel.addMiembro(idGrupo, email);
+        return res.status(200).json(buildResponse({
+            statusCode: 201,
+            inOpCode: 'CREATED',
+            message: 'Miembro añadido exitosamente',
             data: [nuevo],
         }));
     } catch (err) {
@@ -133,7 +162,7 @@ const update = async (req, res) => {
     }
 }
 
-/*const softDelete = async (req, res) => {
+const softDelete = async (req, res) => {
     try {
         const eliminado = await GrupoModel.softDelete(req.params.id);
         if (!eliminado) {
@@ -165,6 +194,88 @@ const update = async (req, res) => {
             message: 'Error interno del servidor',
         }));
     }
-};*/
+};
 
-module.exports = {findAll, findById, getMiembros, create, update};
+const removeMiembro = async (req, res) => {
+    try {
+        const { id, usuario_id } = req.params;
+        if (!id || !usuario_id) {
+            return res.status(400).json(buildResponse({
+                statusCode: 400,
+                inOpCode: 'BAD_REQUEST',
+                message: 'Datos incompletos',
+            }));
+        }
+        const nuevo = await GrupoModel.removeMember(id, usuario_id);
+        return res.status(200).json(buildResponse({
+            statusCode: 201,
+            inOpCode: 'CREATED',
+            message: 'Miembro eliminado del grupo',
+            data: [nuevo],
+        }));
+    } catch (err) {
+        console.error('Error en solicitud:', err);
+        return res.status(500).json(buildResponse({
+        statusCode: 500,
+        inOpCode: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+        }));
+    }
+}
+
+const permisoUsuarioGrupo = async (req, res) => {
+    try {
+        const usuario_id = req.params.id;
+        const { grupo_id, permiso_id } = req.body;
+        if (!grupo_id || !usuario_id || !permiso_id) {
+            return res.status(400).json(buildResponse({
+                statusCode: 400,
+                inOpCode: 'BAD_REQUEST',
+                message: 'Datos incompletos',
+            }));
+        }
+        const nuevo = await GrupoModel.assignPermission(grupo_id, usuario_id, permiso_id);
+        return res.status(200).json(buildResponse({
+            statusCode: 201,
+            inOpCode: 'CREATED',
+            message: 'Nuevo permiso asignado',
+            data: [nuevo],
+        }));
+    } catch (err) {
+        console.error('Error en solicitud:', err);
+        return res.status(500).json(buildResponse({
+        statusCode: 500,
+        inOpCode: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+        }));
+    }
+}
+
+const permisosUsuario = async (req, res) => {
+    try {
+        const { id, usuario_id } = req.params;
+        if (!id || !usuario_id) {
+            return res.status(400).json(buildResponse({
+                statusCode: 400,
+                inOpCode: 'BAD_REQUEST',
+                message: 'Datos incompletos',
+            }));
+        }
+        const nuevo = await GrupoModel.getPermisosUsuario(id, usuario_id);
+        return res.status(200).json(buildResponse({
+            statusCode: 201,
+            inOpCode: 'CREATED',
+            message: 'Permisos del usuario encontrados',
+            data: [nuevo],
+        }));
+    } catch (err) {
+        console.error('Error en solicitud:', err);
+        return res.status(500).json(buildResponse({
+        statusCode: 500,
+        inOpCode: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+        }));
+    }
+}
+
+module.exports = {findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario};
