@@ -1,10 +1,10 @@
-const TicketModel = require('../models/ticket.model');
+const TicketModel = require('./../models/ticket.model');
 
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     const generalData = data.length > 0
-        ? data.map(item => ({ message, ...item}))
-        : [{message}];
-    
+        ? data.map(item => ({ message, ...item }))
+        : [{ message }];
+
     return {
         statusCode,
         inOpCode,
@@ -14,225 +14,392 @@ const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     };
 };
 
-const TicketController = {
-    //Todos los tickets
-    async getAll(request, reply) {
-        try {
-            const tickets = await TicketModel.findAllTickets();
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'OK',
-                message:    'Todos los tickets obtenidos exitosamente',
-                data:       tickets,
-            }));
-        } catch (err) {
-            request.log.error('Error en getAll tickets:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    //Tickets de un grupo
-    async getAllGrupo(request, reply) {
-        try {
-            const filtros = {
-                grupo_id:     request.query.grupo_id     ? Number(request.query.grupo_id)     : undefined,
-                /*estado_id:    request.query.estado_id    ? Number(request.query.estado_id)    : undefined,
-                prioridad_id: request.query.prioridad_id ? Number(request.query.prioridad_id) : undefined,
-                asignado_id:  request.query.asignado_id  ? Number(request.query.asignado_id)  : undefined,*/
-            };
-            const tickets = await TicketModel.findAll(filtros);
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'OK',
-                message:    'Tickets obtenidos exitosamente',
-                data:       tickets,
-            }));
-        } catch (err) {
-            request.log.error('Error en getAll tickets:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    async getSinAsignar(request, reply) {
-        try {
-            const { grupo_id } = request.params;
-            const tickets  = await TicketModel.findSinAsignar(grupo_id);
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'OK',
-                message:    'Tickets sin asignar obtenidos exitosamente',
-                data:       tickets,
-            }));
-        } catch (err) {
-            request.log.error('Error en getSinAsignar:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    async getById(request, reply) {
-        try {
-            const ticket = await TicketModel.findById(Number(request.params.id));
-            if (!ticket) {
-                return reply.code(404).send(buildResponse({
-                    statusCode: 404,
-                    inOpCode:   'NOT_FOUND',
-                    message:    'Ticket no encontrado',
-                }));
-            }
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'OK',
-                message:    'Ticket obtenido exitosamente',
-                data:       [ticket],
-            }));
-        } catch (err) {
-            request.log.error('Error en getById ticket:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    // POST /api/tickets
-    async create(request, reply) {
-        try {
-            const creador_id = Number(request.headers['x-user-id']);
-            if (!creador_id) {
-                return reply.code(401).send(buildResponse({
-                    statusCode: 401,
-                    inOpCode:   'UNAUTHORIZED',
-                    message:    'Usuario no identificado',
-                }));
-            }
-
-            const { titulo, descripcion, grupo_id, estado_id, prioridad_id, asignado_id, fecha_cierre } = request.body;
-            const ticket = await TicketModel.create({
-                titulo, descripcion, grupo_id, creador_id,
-                estado_id, prioridad_id,
-                asignado_id: asignado_id || null, fecha_cierre
-            });
-            reply.code(201).send(buildResponse({
-                statusCode: 201,
-                inOpCode:   'CREATED',
-                message:    'Ticket creado exitosamente',
-                data:       [ticket],
-            }));
-        } catch (err) {
-            request.log.error('Error en create ticket:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    // PUT /api/tickets/:id
-    async update(request, reply) {
-        try {
-            const ticket = await TicketModel.update(Number(request.params.id), request.body);
-            if (!ticket) {
-                return reply.code(404).send(buildResponse({
-                    statusCode: 404,
-                    inOpCode:   'NOT_FOUND',
-                    message:    'Ticket no encontrado o sin campos válidos para actualizar',
-                }));
-            }
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'UPDATED',
-                message:    'Ticket actualizado exitosamente',
-                data:       [ticket],
-            }));
-        } catch (err) {
-            request.log.error('Error en update ticket:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
-
-    // PATCH /api/tickets/:id/estado
-    async cambiarEstado(request, reply) {
-        try {
-            const { id } = request.params;
-            const { estado_id } = request.body;
-
-            if (!estado_id) {
-                return reply.code(400).send(buildResponse({
-                    statusCode: 400,
-                    message: 'El campo estado_id es requerido'
-                }));
-            }
-
-            const ticket = await TicketModel.cambiarEstado(Number(id), Number(estado_id));
-
-            if (!ticket) {
-                return reply.code(404).send(buildResponse({
-                    statusCode: 404,
-                    inOpCode: 'NOT_FOUND',
-                    message: 'Ticket no encontrado',
-                }));
-            }
-
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode: 'UPDATED',
-                message: 'Estado del ticket actualizado exitosamente',
-                data: [ticket],
-            }));
-        } catch (err) {
-            request.log.error('Error en cambiarEstado:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode: 'INTERNAL_ERROR',
-                message: 'Error interno del servidor',
-            }));
-        }
-    },
-
-    // DELETE /api/tickets/:id  (soft delete)
-    async remove(request, reply) {
-        try {
-            const ticket = await TicketModel.softDelete(Number(request.params.id));
-            if (!ticket) {
-                return reply.code(404).send(buildResponse({
-                    statusCode: 404,
-                    inOpCode:   'NOT_FOUND',
-                    message:    'Ticket no encontrado o ya eliminado',
-                }));
-            }
-            reply.code(200).send(buildResponse({
-                statusCode: 200,
-                inOpCode:   'DELETED',
-                message:    'Ticket eliminado exitosamente',
-                data:       [ticket],
-            }));
-        } catch (err) {
-            request.log.error('Error en remove ticket:', err);
-            reply.code(500).send(buildResponse({
-                statusCode: 500,
-                inOpCode:   'INTERNAL_ERROR',
-                message:    'Error interno del servidor',
-            }));
-        }
-    },
+const ESTADO = {
+    PENDIENTE:   1,
+    EN_PROCESO:  2,
+    EN_REVISION: 3,
+    HECHO:       4,
+    BLOQUEADO:   5,
 };
 
-module.exports = TicketController;
+const PRIORIDAD = {
+    ALTA:  1,
+    MEDIA: 2,
+    BAJA:  3,
+};
+
+function esBloqueado(ticket) {
+    return ticket?.estado_actual?.toLowerCase() === 'bloqueado';
+}
+
+async function getAll(req, reply) {
+    try {
+        const { grupo_id, incluir_bloqueados } = req.query;
+
+        let tickets = await TicketModel.findAll({
+            grupo_id: grupo_id ? Number(grupo_id) : undefined,
+        });
+
+        /*if (incluir_bloqueados !== 'true') {
+            tickets = tickets.filter(t => !esBloqueado(t));
+        }*/
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets obtenidos exitosamente',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[getAll]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getByGrupo(req, reply) {
+    try {
+        const { grupo_id } = req.params;
+
+        let tickets = await TicketModel.findByGrupo(Number(grupo_id));
+        tickets = tickets.filter(t => !esBloqueado(t));
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets del grupo obtenidos exitosamente',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[getByGrupo]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getSinAsignar(req, reply) {
+    try {
+        const { grupo_id } = req.params;
+
+        const tickets = await TicketModel.findSinAsignar(Number(grupo_id));
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets sin asignar obtenidos exitosamente',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[getSinAsignar]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+// Devuelve el ticket con comentarios e historial incluidos
+async function getById(req, reply) {
+    try {
+        const { id } = req.params;
+
+        const ticket = await TicketModel.findById(Number(id));
+
+        if (!ticket || esBloqueado(ticket)) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        const [comentarios, historial] = await Promise.all([
+            TicketModel.findComentariosByTicket(id),
+            TicketModel.findHistorialByTicket(id),
+        ]);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Ticket obtenido exitosamente',
+            data:       [{ ...ticket, comentarios, historial }],
+        }));
+    } catch (error) {
+        req.log.error(error, '[getById]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function create(req, reply) {
+    try {
+        const { titulo, descripcion, grupo_id, prioridad_id, asignado_id, fecha_cierre } = req.body;
+        const creador_id = req.userId;
+
+        const nuevoTicket = await TicketModel.create({
+            titulo,
+            descripcion,
+            grupo_id:     Number(grupo_id),
+            creador_id,
+            estado_id:    ESTADO.PENDIENTE,
+            prioridad_id: Number(prioridad_id),
+            asignado_id:  asignado_id ? Number(asignado_id) : null,
+            fecha_cierre,
+        });
+
+        await TicketModel.registrarHistorial(nuevoTicket.id, creador_id, 'Ticket creado');
+
+        return reply.status(201).send(buildResponse({
+            statusCode: 201,
+            inOpCode:   'CREATED',
+            message:    'Ticket creado exitosamente',
+            data:       [nuevoTicket],
+        }));
+    } catch (error) {
+        req.log.error(error, '[create]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function update(req, reply) {
+    try {
+        const { id }     = req.params;
+        const usuario_id = req.userId;
+
+        const ticket = await TicketModel.findById(Number(id));
+        if (!ticket || esBloqueado(ticket)) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        const actualizado = await TicketModel.update(Number(id), req.body);
+        if (!actualizado) {
+            return reply.status(400).send(buildResponse({
+                statusCode: 400,
+                inOpCode:   'BAD_REQUEST',
+                message:    'No se proporcionaron campos válidos para actualizar',
+            }));
+        }
+
+        await TicketModel.registrarHistorial(id, usuario_id, 'Ticket actualizado');
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Ticket actualizado exitosamente',
+            data:       [actualizado],
+        }));
+    } catch (error) {
+        req.log.error(error, '[update]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function cambiarEstado(req, reply) {
+    try {
+        const { id }      = req.params;
+        const { estado_id } = req.body;
+        const usuario_id  = req.userId;
+
+        const ticket = await TicketModel.findById(Number(id));
+        if (!ticket) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        if (esBloqueado(ticket)) {
+            return reply.status(409).send(buildResponse({
+                statusCode: 409,
+                inOpCode:   'CONFLICT',
+                message:    'El ticket está bloqueado y no puede cambiar de estado',
+            }));
+        }
+
+        const actualizado = await TicketModel.cambiarEstado(Number(id), Number(estado_id));
+
+        const accionHistorial = Number(estado_id) === ESTADO.BLOQUEADO
+            ? 'Ticket bloqueado (eliminado)'
+            : `Estado cambiado a ID ${estado_id}`;
+
+        await TicketModel.registrarHistorial(id, usuario_id, accionHistorial);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Estado del ticket actualizado exitosamente',
+            data:       [actualizado],
+        }));
+    } catch (error) {
+        req.log.error(error, '[cambiarEstado]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function asignar(req, reply) {
+    try {
+        const { id }        = req.params;
+        const { asignado_id } = req.body;
+        const usuario_id    = req.userId;
+
+        const ticket = await TicketModel.findById(Number(id));
+        if (!ticket || esBloqueado(ticket)) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        const actualizado = await TicketModel.update(Number(id), {
+            asignado_id: asignado_id ? Number(asignado_id) : null,
+        });
+
+        const accion = asignado_id
+            ? `Ticket asignado a usuario ID ${asignado_id}`
+            : 'Ticket desasignado';
+
+        await TicketModel.registrarHistorial(id, usuario_id, accion);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    asignado_id ? 'Ticket asignado exitosamente' : 'Ticket desasignado exitosamente',
+            data:       [actualizado],
+        }));
+    } catch (error) {
+        req.log.error(error, '[asignar]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function agregarComentario(req, reply) {
+    try {
+        const { id }        = req.params;
+        const { comentario } = req.body;
+        const usuario_id    = req.userId;
+
+        const ticket = await TicketModel.findById(Number(id));
+        if (!ticket || esBloqueado(ticket)) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        const nuevoComentario = await TicketModel.crearComentario(id, usuario_id, comentario.trim());
+        await TicketModel.registrarHistorial(id, usuario_id, 'Comentario agregado');
+
+        return reply.status(201).send(buildResponse({
+            statusCode: 201,
+            inOpCode:   'CREATED',
+            message:    'Comentario agregado exitosamente',
+            data:       [nuevoComentario],
+        }));
+    } catch (error) {
+        req.log.error(error, '[agregarComentario]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getHistorial(req, reply) {
+    try {
+        const { id } = req.params;
+
+        const historial = await TicketModel.findHistorialByTicket(id);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Historial obtenido exitosamente',
+            data:       historial,
+        }));
+    } catch (error) {
+        req.log.error(error, '[getHistorial]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function remove(req, reply) {
+    try {
+        const { id }     = req.params;
+        const usuario_id = req.userId;
+
+        const ticket = await TicketModel.findById(Number(id));
+        if (!ticket) {
+            return reply.status(404).send(buildResponse({
+                statusCode: 404,
+                inOpCode:   'NOT_FOUND',
+                message:    'Ticket no encontrado',
+            }));
+        }
+
+        if (esBloqueado(ticket)) {
+            return reply.status(409).send(buildResponse({
+                statusCode: 409,
+                inOpCode:   'CONFLICT',
+                message:    'El ticket ya está bloqueado',
+            }));
+        }
+
+        await TicketModel.cambiarEstado(Number(id), ESTADO.BLOQUEADO);
+        await TicketModel.registrarHistorial(id, usuario_id, 'Ticket bloqueado (eliminado)');
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Ticket bloqueado correctamente',
+        }));
+    } catch (error) {
+        req.log.error(error, '[remove]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+module.exports = { getAll, getByGrupo, getSinAsignar, getById, create, update,
+    cambiarEstado, asignar, agregarComentario, getHistorial, remove,
+};
