@@ -13,7 +13,13 @@ module.exports = async (request, reply) => {
         request.headers['x-user-id']   = String(user.id);
         request.headers['x-user-role'] = String(user.rol);
         request.user = user;
-    } catch {
+    } catch (err) {
+        // 👇 Log temporal para diagnosticar
+        console.error('[Auth] Error verificando token:');
+        console.error('  Tipo de error:', err.name);        // TokenExpiredError / JsonWebTokenError
+        console.error('  Mensaje:', err.message);
+        console.error('  JWT_SECRET definido:', !!process.env.JWT_SECRET);
+        console.error('  JWT_SECRET longitud:', process.env.JWT_SECRET?.length);
         return reply.code(401).send({ error: 'Token inválido o expirado' });
     }
 };

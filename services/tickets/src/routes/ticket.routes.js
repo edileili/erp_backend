@@ -1,4 +1,6 @@
 const TicketController = require('../controllers/ticket.controller');
+const permiso = require('../middlewares/permiso.middlware');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 const getAllSchema = {
     query: {
@@ -51,15 +53,16 @@ const cambiarEstadoSchema = {
 
 async function ticketRoutes(fastify) {
     //Tickets por grupo
-    fastify.get('/grupo/:id', {schema: getAllSchema}, TicketController.getAllGrupo);
+    fastify.get('/grupo/:id', {schema: getAllSchema, preHandler: [authMiddleware, permiso('tickets_view')]}, TicketController.getAllGrupo);
     //Todos los tickets
-    fastify.get('/', TicketController.getAll);
+    fastify.get('/', {preHandler: [authMiddleware, permiso('tickets_view')]}, TicketController.getAll);
 
-    fastify.get('/sin-asignar/:grupo_id', TicketController.getSinAsignar);
-    fastify.get('/:id', TicketController.getById);
-    fastify.post('/', {schema: createSchema}, TicketController.create);
-    fastify.put('/:id', {schema: updateSchema}, TicketController.update);
-    fastify.patch('/:id/estado', {schema: cambiarEstadoSchema}, TicketController.cambiarEstado);
+    fastify.get('/sin-asignar/:grupo_id', {preHandler: [authMiddleware, permiso('tickets_view')]}, TicketController.getSinAsignar);
+    
+    fastify.get('/:id', {preHandler: [authMiddleware, permiso('ticket_view')]}, TicketController.getById);
+    fastify.post('/', {schema: createSchema, preHandler: [authMiddleware, permiso('ticket_add')]}, TicketController.create);
+    fastify.put('/:id', {schema: updateSchema, preHandler: [authMiddleware, permiso('ticket_edit')]}, TicketController.update);
+    fastify.patch('/:id/estado', {schema: cambiarEstadoSchema, preHandler: [authMiddleware, permiso('tickets_edit_state')]}, TicketController.cambiarEstado);
     //fastify.delete('/:id', TicketController.remove);
 }
 

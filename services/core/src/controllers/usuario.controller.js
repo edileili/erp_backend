@@ -120,7 +120,7 @@ const login = async (req, res) => {
 // ── GET /api/usuarios/perfil ───────────────────────────────────────────────
 const perfil = async (req, res) => {
   try {
-    const usuario = await UsuarioModel.findById(req.usuario.id);
+    const usuario = await UsuarioModel.findById(req.params.id);
     if (!usuario) {
       return res.status(404).json(buildResponse({
         statusCode: 404,

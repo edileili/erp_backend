@@ -21,8 +21,44 @@ const fastify = Fastify({
     },
 });
 
+fastify.addHook('onRequest', async (request, reply) => {
+    console.log('[onRequest]', request.method, request.url);
+    console.log('[onRequest] Auth header:', request.headers['authorization'] || '(vacío)');
+});
+
 fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
     done(null, body);
+});
+
+fastify.addHook('preHandler', async (request, reply) => {
+    const url = request.url;
+    
+    if (!url.startsWith('/api/') || url.startsWith('/api/auth/')) return;
+    if (url.startsWith('/internal/')) return; // ← esta es la nueva línea clave
+    if (reply.sent) return;
+
+    console.log('[preHandler] LLAMANDO authMiddleware');
+    const jwt = require('jsonwebtoken');
+    const header = request.headers['authorization'] || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    
+    console.log('[preHandler] token:', token ? 'presente' : 'ausente');
+    
+    if (!token) {
+        return reply.code(401).send({ error: 'Token requerido' });
+    }
+    
+    try {
+        const user = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('[preHandler] JWT_SECRET length:', process.env.JWT_SECRET?.length);
+        console.log('[preHandler] user:', user.id);
+        request.headers['x-user-id'] = String(user.id);
+        request.headers['x-user-role'] = String(user.rol);
+        request.user = user;
+    } catch (err) {
+        console.log('[preHandler] jwt.verify falló:', err.name, err.message);
+        return reply.code(401).send({ error: 'Token inválido o expirado' });
+    }
 });
 
 function proxyTo(target) {
@@ -45,7 +81,7 @@ function proxyTo(target) {
             const proxyReq = http.request(options, (proxyRes) => {
                 const origin = request.headers['origin'] ||
                     process.env.FRONTEND_URL || 'http://localhost:4200';
-                
+
                 const mergedHeaders = {
                     ...proxyRes.headers,
                     'access-control-allow-origin': origin,
@@ -76,6 +112,7 @@ function proxyTo(target) {
             });
 
             proxyReq.on('timeout', () => {
+                console.log('[proxy] TIMEOUT en:', request.url);
                 proxyReq.destroy();
             });
 
@@ -104,28 +141,16 @@ const start = async () => {
         }),
     });
 
-    // Health check
     fastify.get('/health', async () => ({ status: 'ok', ts: new Date() }));
 
-    // Proxy interno de la base de datos
     fastify.post('/internal/db', { preHandler: internalAuthMiddleware }, dbProxy);
 
     const CORE    = `http://localhost:${process.env.CORE_PORT    || 3001}`;
     const TICKETS = `http://localhost:${process.env.TICKETS_PORT || 3002}`;
     const GRUPOS  = `http://localhost:${process.env.GROUPS_PORT  || 3003}`;
 
-    // Rutas públicas
     fastify.all('/api/auth/*', proxyTo(CORE));
 
-    // Hook JWT para rutas protegidas
-    fastify.addHook('preHandler', async (request, reply) => {
-        const url = request.url;
-        if (!url.startsWith('/api/') || url.startsWith('/api/auth/')) return;
-        if (reply.sent) return;
-        await authMiddleware(request, reply);
-    });
-
-    // Rutas protegidas
     fastify.all('/api/usuarios',   proxyTo(CORE));
     fastify.all('/api/usuarios/*', proxyTo(CORE));
     fastify.all('/api/grupos',     proxyTo(GRUPOS));
@@ -135,12 +160,10 @@ const start = async () => {
     fastify.all('/api/tickets',    proxyTo(TICKETS));
     fastify.all('/api/tickets/*',  proxyTo(TICKETS));
 
-    // 404
     fastify.setNotFoundHandler((_req, reply) => {
         reply.code(404).send({ error: 'Ruta no encontrada' });
     });
 
-    // Error global
     fastify.setErrorHandler((error, _req, reply) => {
         fastify.log.error(error);
         reply.code(error.statusCode || 500).send({

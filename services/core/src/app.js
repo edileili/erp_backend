@@ -11,17 +11,13 @@ const PORT = process.env.CORE_PORT || 3001;
 
 app.use(express.json());
 
-// ─── Middleware de confianza ──────────────────────────────────────────────────
-// Este servicio solo debe recibir peticiones del Gateway.
-// El Gateway inyecta x-user-id y x-user-role después de validar el JWT.
 app.use((req, res, next) => {
-    // En producción podrías validar que la IP origen sea la del Gateway
     req.userId   = req.headers['x-user-id'];
     req.userRole = req.headers['x-user-role'];
     next();
 });
 
-// ─── Rutas (sin prefijo /api porque el Gateway ya lo maneja) ─────────────────
+//Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/admin',    adminRoutes);
