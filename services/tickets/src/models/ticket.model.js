@@ -35,10 +35,12 @@ const TicketModel = {
                 g.nombre          AS nombre_grupo,
                 u_asig.nombre_com AS asignado_a_nombre,
                 est.nombre        AS estado_actual,
-                prio.nombre       AS nivel_prioridad
+                prio.nombre       AS nivel_prioridad,
+                u_crea.nombre_com AS creador_nombre
             FROM public.tickets t
             JOIN  public.grupos      g       ON t.grupo_id     = g.id
             LEFT  JOIN public.usuarios u_asig ON t.asignado_id = u_asig.id
+            LEFT JOIN public.usuarios u_crea ON t.creador_id = u_crea.id
             JOIN  public.estados     est     ON t.estado_id    = est.id
             JOIN  public.prioridades prio    ON t.prioridad_id = prio.id
         `;
@@ -75,6 +77,69 @@ const TicketModel = {
               AND g.id = $1
             ORDER BY t.creado_fecha DESC`,
             [grupo_id]
+        );
+        return rows;
+    },
+
+    async findAltaPrioridad(grupo_id) {
+        const { rows } = await db.query(
+            `SELECT 
+                t.id,
+                t.titulo,
+                t.creado_fecha,
+                g.nombre    AS nombre_grupo,
+                est.nombre  AS estado_actual,
+                prio.nombre AS nivel_prioridad
+            FROM public.tickets t
+            JOIN  public.grupos      g    ON t.grupo_id     = g.id
+            LEFT  JOIN public.estados     est  ON t.estado_id    = est.id
+            LEFT  JOIN public.prioridades prio ON t.prioridad_id = prio.id
+            WHERE t.prioridad_id = 1
+              AND g.id = $1
+            ORDER BY t.creado_fecha DESC`,
+            [grupo_id]
+        );
+        return rows;
+    },
+
+    async findTicketsAsignados(usuario_id, grupo_id) {
+        const { rows } = await db.query(
+            `SELECT 
+                t.id,
+                t.titulo,
+                t.creado_fecha,
+                g.nombre    AS nombre_grupo,
+                est.nombre  AS estado_actual,
+                prio.nombre AS nivel_prioridad
+            FROM public.tickets t
+            JOIN  public.grupos      g    ON t.grupo_id     = g.id
+            LEFT  JOIN public.estados     est  ON t.estado_id    = est.id
+            LEFT  JOIN public.prioridades prio ON t.prioridad_id = prio.id
+            WHERE t.asignado_id = $1
+            AND g.id = $2
+            ORDER BY t.creado_fecha DESC`,
+            [usuario_id, grupo_id]
+        );
+        return rows;
+    },
+
+    async findTicketsCreados(usuario_id, grupo_id) {
+        const { rows } = await db.query(
+            `SELECT 
+                t.id,
+                t.titulo,
+                t.creado_fecha,
+                g.nombre    AS nombre_grupo,
+                est.nombre  AS estado_actual,
+                prio.nombre AS nivel_prioridad
+            FROM public.tickets t
+            JOIN  public.grupos      g    ON t.grupo_id     = g.id
+            LEFT  JOIN public.estados     est  ON t.estado_id    = est.id
+            LEFT  JOIN public.prioridades prio ON t.prioridad_id = prio.id
+            WHERE t.creador_id = $1
+            AND g.id = $2
+            ORDER BY t.creado_fecha DESC`,
+            [usuario_id, grupo_id]
         );
         return rows;
     },

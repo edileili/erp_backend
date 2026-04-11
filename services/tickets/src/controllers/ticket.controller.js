@@ -40,9 +40,9 @@ async function getAll(req, reply) {
             grupo_id: grupo_id ? Number(grupo_id) : undefined,
         });
 
-        /*if (incluir_bloqueados !== 'true') {
+        if (incluir_bloqueados !== 'true') {
             tickets = tickets.filter(t => !esBloqueado(t));
-        }*/
+        }
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -86,7 +86,6 @@ async function getByGrupo(req, reply) {
 async function getSinAsignar(req, reply) {
     try {
         const { grupo_id } = req.params;
-
         const tickets = await TicketModel.findSinAsignar(Number(grupo_id));
 
         return reply.status(200).send(buildResponse({
@@ -97,6 +96,73 @@ async function getSinAsignar(req, reply) {
         }));
     } catch (error) {
         req.log.error(error, '[getSinAsignar]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getAltaPrioridad(req, reply) {
+    try {
+        const { grupo_id } = req.params;
+        const tickets = await TicketModel.findAltaPrioridad(Number(grupo_id));
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets de alta prioridad obtenidos',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[AltaPrioridad]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getTicketsCreados(req, reply) {
+    try {
+        const { grupo_id } = req.params;
+        const creador_id = req.userId;
+
+        const tickets = await TicketModel.findTicketsCreados(creador_id, grupo_id);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets creados obtenidos',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[TicketsCreados]');
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+}
+
+async function getTicketsAsignados(req, reply) {
+    try {
+        const { grupo_id } = req.params;
+        const asignado_id = req.userId;
+
+        const tickets = await TicketModel.findTicketsAsignados(asignado_id, grupo_id);
+
+        return reply.status(200).send(buildResponse({
+            statusCode: 200,
+            inOpCode:   'OK',
+            message:    'Tickets asignados obtenidos',
+            data:       tickets,
+        }));
+    } catch (error) {
+        req.log.error(error, '[TicketsAsignados]');
         return reply.status(500).send(buildResponse({
             statusCode: 500,
             inOpCode:   'INTERNAL_ERROR',
@@ -401,5 +467,5 @@ async function remove(req, reply) {
 }
 
 module.exports = { getAll, getByGrupo, getSinAsignar, getById, create, update,
-    cambiarEstado, asignar, agregarComentario, getHistorial, remove,
+    cambiarEstado, asignar, agregarComentario, getHistorial, remove, getAltaPrioridad, getTicketsAsignados, getTicketsCreados
 };

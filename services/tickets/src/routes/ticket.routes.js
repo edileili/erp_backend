@@ -108,6 +108,21 @@ async function ticketRoutes(fastify) {
         preHandler: [authMiddleware, permiso('tickets_view')],
     }, TicketController.getSinAsignar);
 
+    fastify.get('/alta-prioridad/:grupo_id', {
+        schema:     sinAsignarSchema,
+        preHandler: [authMiddleware, permiso('tickets_view')],
+    }, TicketController.getAltaPrioridad);
+
+    fastify.get('/creados/:grupo_id', {
+        schema:     sinAsignarSchema,
+        preHandler: [authMiddleware, permiso('tickets_view')],
+    }, TicketController.getTicketsCreados);
+
+    fastify.get('/asignados/:grupo_id', {
+        schema:     sinAsignarSchema,
+        preHandler: [authMiddleware, permiso('tickets_view')],
+    }, TicketController.getTicketsAsignados);
+
     // Detalle de un ticket (incluye comentarios e historial)
     fastify.get('/:id', {
         preHandler: [authMiddleware, permiso('ticket_view')],
