@@ -278,4 +278,42 @@ const permisosUsuario = async (req, res) => {
     }
 }
 
-module.exports = {findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario};
+const getMyGroups = async (req, res) => {
+    try {
+        const usuario_id = req.usuario?.id || req.userId; 
+
+        if (!usuario_id) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401,
+                message: 'Usuario no identificado'
+            }));
+        }
+
+        const grupos = await GrupoModel.myGroups(usuario_id);
+
+        if (!grupos || grupos.length === 0) {
+            return res.status(200).json(buildResponse({
+                statusCode: 200,
+                inOpCode: 'OK',
+                message: 'No perteneces a ningún grupo todavía',
+                data: []
+            }));
+        }
+
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Grupos obtenidos exitosamente',
+            data: grupos 
+        }));
+    } catch (err) {
+        console.error('Error en solicitud:', err);
+        return res.status(500).json(buildResponse({
+        statusCode: 500,
+        inOpCode: 'INTERNAL_ERROR',
+        message: 'Error interno del servidor',
+        }));
+    }
+}
+
+module.exports = {findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario, getMyGroups};

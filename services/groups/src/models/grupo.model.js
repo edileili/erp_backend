@@ -166,6 +166,23 @@ const GrupoModel = {
         }
         
         return rows[0];
+    },
+
+    async myGroups(usuario_id) {
+        const { rows } = await db.query(
+            `SELECT 
+                g.id, 
+                g.nombre, 
+                g.descripcion, 
+                g.creado_fecha,
+                (SELECT COUNT(*) FROM public.grupo_miembros gm_count WHERE gm_count.grupo_id = g.id) AS total_miembros
+            FROM public.grupos g
+            INNER JOIN public.grupo_miembros gm ON g.id = gm.grupo_id
+            WHERE gm.usuario_id = $1
+            ORDER BY g.creado_fecha DESC;`,
+            [usuario_id]
+        );
+        return rows;
     }
 };
 

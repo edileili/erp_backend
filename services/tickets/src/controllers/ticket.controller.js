@@ -1,4 +1,5 @@
 const TicketModel = require('./../models/ticket.model');
+const db = require('../../../shared/db-client'); 
 
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     const generalData = data.length > 0
@@ -82,6 +83,50 @@ async function getByGrupo(req, reply) {
         }));
     }
 }
+
+// ticket_controller.js
+
+const getMisTickets = async (req, reply) => {
+    const { grupo_id } = req.params;
+    const usuario_id = req.userId;
+
+    const { rows: permisosRows } = await db.query(
+        `SELECT p.nombre FROM public.permisos_generales pg
+         JOIN public.permisos p ON p.id = pg.permiso_id
+         WHERE pg.usuario_id = $1
+           AND p.nombre = ANY($2::text[])`,
+        [usuario_id, ['ticket_view_owner', 'ticket_view_created']]
+    );
+
+    const permisos = permisosRows.map(r => r.nombre);
+    const tieneViewOwner   = permisos.includes('ticket_view_owner');
+    const tieneViewCreated = permisos.includes('ticket_view_created');
+
+    try {
+        const resultados = await Promise.all([
+            tieneViewOwner   ? TicketModel.findTicketsAsignados(usuario_id, grupo_id) : [],
+            tieneViewCreated ? TicketModel.findTicketsCreados(usuario_id, grupo_id)   : [],
+        ]);
+        const mapa = new Map();
+        resultados.flat().forEach(t => mapa.set(t.id, t));
+        const tickets = [...mapa.values()];
+
+        return reply.status(201).send(buildResponse({
+            statusCode: 201,
+            inOpCode:   'OK',
+            message:    'Tickets obtenidos exitosamente',
+            data:       tickets,
+        }));
+
+    } catch (error) {
+        req.log.error('Error al obtener mis tickets:', error);
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+};
 
 async function getSinAsignar(req, reply) {
     try {
@@ -467,5 +512,5 @@ async function remove(req, reply) {
 }
 
 module.exports = { getAll, getByGrupo, getSinAsignar, getById, create, update,
-    cambiarEstado, asignar, agregarComentario, getHistorial, remove, getAltaPrioridad, getTicketsAsignados, getTicketsCreados
+    cambiarEstado, asignar, agregarComentario, getHistorial, remove, getAltaPrioridad, getTicketsAsignados, getTicketsCreados, getMisTickets
 };
