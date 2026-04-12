@@ -84,18 +84,21 @@ async function getByGrupo(req, reply) {
     }
 }
 
-// ticket_controller.js
-
 const getMisTickets = async (req, reply) => {
     const { grupo_id } = req.params;
-    const usuario_id = req.userId;
+    const usuario_id = req.user?.id || req.usuario?.id || req.userId;
+
+    if (!usuario_id) {
+        return reply.code(401).send({ error: 'No se pudo identificar al usuario' });
+    }
 
     const { rows: permisosRows } = await db.query(
-        `SELECT p.nombre FROM public.permisos_generales pg
-         JOIN public.permisos p ON p.id = pg.permiso_id
-         WHERE pg.usuario_id = $1
-           AND p.nombre = ANY($2::text[])`,
-        [usuario_id, ['ticket_view_owner', 'ticket_view_created']]
+        `SELECT p.nombre FROM public.grupo_usuario_permisos gup
+        JOIN public.permisos p ON p.id = gup.permiso_id
+        WHERE gup.usuario_id = $1
+            AND gup.grupo_id = $2
+            AND p.nombre = ANY($3::text[])`,
+        [usuario_id, grupo_id, ['ticket_view_owner', 'ticket_view_created']]
     );
 
     const permisos = permisosRows.map(r => r.nombre);
@@ -111,7 +114,7 @@ const getMisTickets = async (req, reply) => {
         resultados.flat().forEach(t => mapa.set(t.id, t));
         const tickets = [...mapa.values()];
 
-        return reply.status(201).send(buildResponse({
+        return reply.code(201).send(buildResponse({
             statusCode: 201,
             inOpCode:   'OK',
             message:    'Tickets obtenidos exitosamente',
@@ -133,7 +136,7 @@ async function getSinAsignar(req, reply) {
         const { grupo_id } = req.params;
         const tickets = await TicketModel.findSinAsignar(Number(grupo_id));
 
-        return reply.status(200).send(buildResponse({
+        return reply.code(200).send(buildResponse({
             statusCode: 200,
             inOpCode:   'OK',
             message:    'Tickets sin asignar obtenidos exitosamente',

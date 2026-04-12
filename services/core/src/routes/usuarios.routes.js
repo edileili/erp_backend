@@ -7,7 +7,7 @@ const validate       = require('../middlewares/validate.middleware');
 const { actualizarSchema } = require('../schemas/usuario.schema');
 
 // ── Rutas protegidas (requieren JWT) ───────────────────────────────────────
-router.get('/perfil/:id', authMiddleware, perfil);
+router.get('/perfil', authMiddleware, perfil);
 router.put('/perfil', authMiddleware, validate(actualizarSchema), actualizar);
 
 module.exports = router;

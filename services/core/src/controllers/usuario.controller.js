@@ -90,6 +90,14 @@ const login = async (req, res) => {
       }));
     }
 
+    const isDesactivated = await UsuarioModel.isDesactivated(usuario.id);
+    if(isDesactivated) {
+      return res.status(401).json(buildResponse({
+        statusCode: 401, inOpCode: 'UNAUTHORIZED',
+        message: 'Usuario desactivado',
+      }));
+    }
+
     const permisos = await PermisoModel.findByUsuario(usuario.id);
     const nombresPermisos = permisos.map(p => p.nombre);
 
@@ -119,16 +127,18 @@ const login = async (req, res) => {
 
 // ── GET /api/usuarios/perfil ───────────────────────────────────────────────
 const perfil = async (req, res) => {
+  console.log("2. Datos en req.usuario:", req.usuario);
   try {
-    const usuario = await UsuarioModel.findById(req.params.id);
-    if (!usuario) {
-      return res.status(404).json(buildResponse({
-        statusCode: 404,
-        inOpCode: 'NOT_FOUND',
-        message: 'Usuario no encontrado',
-      }));
+    const usuario_id = req.usuario?.id || req.usuario?._id || req.userId;
+    console.log("3. Buscando ID:", usuario_id);
+    
+    if (!usuario_id) {
+        console.log("4. Error: No hay ID");
+        return res.status(400).json({ error: "No se encontró ID en el token" });
     }
-
+    const usuario = await UsuarioModel.findById(usuario_id);
+    console.log("5. Resultado de DB:", usuario ? "Encontrado" : "No encontrado");
+    
     return res.status(200).json(buildResponse({
       statusCode: 200,
       inOpCode: 'OK',

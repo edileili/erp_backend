@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const GrupoModel = require('../models/grupo.model');
+const PermisoModel = require('../models/permiso.model');
 
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     const generalData = data.length > 0
@@ -225,21 +226,17 @@ const removeMiembro = async (req, res) => {
 
 const permisoUsuarioGrupo = async (req, res) => {
     try {
-        const usuario_id = req.params.id;
-        const { grupo_id, permiso_id } = req.body;
-        if (!grupo_id || !usuario_id || !permiso_id) {
-            return res.status(400).json(buildResponse({
-                statusCode: 400,
-                inOpCode: 'BAD_REQUEST',
-                message: 'Datos incompletos',
-            }));
-        }
-        const nuevo = await GrupoModel.assignPermission(grupo_id, usuario_id, permiso_id);
+        const { usuario_id, permisos } = req.body;
+        const { grupo_id } = req.params.id;
+
+        await PermisoModel.sincronizarEnGrupo(usuario_id, grupo_id, permisos);
+        const actualizados = await PermisoModel.findByUsuarioEnGrupo(usuario_id, grupo_id);
+
         return res.status(200).json(buildResponse({
-            statusCode: 201,
+            statusCode: 200,
             inOpCode: 'CREATED',
-            message: 'Nuevo permiso asignado',
-            data: [nuevo],
+            message: 'Permisos de grupo',
+            data: actualizados,
         }));
     } catch (err) {
         console.error('Error en solicitud:', err);
@@ -261,12 +258,14 @@ const permisosUsuario = async (req, res) => {
                 message: 'Datos incompletos',
             }));
         }
-        const nuevo = await GrupoModel.getPermisosUsuario(id, usuario_id);
+
+        const permisos = await PermisoModel.findByUsuarioEnGrupo(usuario_id, id);
+
         return res.status(200).json(buildResponse({
-            statusCode: 201,
+            statusCode: 200,
             inOpCode: 'CREATED',
             message: 'Permisos del usuario encontrados',
-            data: [nuevo],
+            data: permisos,
         }));
     } catch (err) {
         console.error('Error en solicitud:', err);
