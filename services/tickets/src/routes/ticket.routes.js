@@ -93,7 +93,7 @@ async function ticketRoutes(fastify) {
     // Listar todos los tickets
     fastify.get('/', {
         schema:     getAllSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
+        preHandler: [authMiddleware, permiso('ticket_manage')],
     }, TicketController.getAll);
 
     // Listar tickets de un grupo específico

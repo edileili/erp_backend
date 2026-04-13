@@ -7,6 +7,8 @@ const {
   listarPermisos, actualizarPermisos,
   getPermisosUser,
   getPermisosUserEnGrupo,
+  permisosUsuarios,
+  permisosGrupos,
 } = require('../controllers/admin.controller');
 
 const authMiddleware   = require('../middlewares/auth.middleware');
@@ -22,8 +24,11 @@ router.put   ('/:id',      authMiddleware, permiso('user_edit'),  validate(actua
 router.delete('/:id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
 router.get('/:id/permisos', authMiddleware, permiso('user_edit_permissions'), getPermisosUser);
+router.get('/:id/permisos-user', authMiddleware, permiso('user_edit_permissions'), permisosUsuarios);
+router.get('/:id/permisos-group', authMiddleware, permiso('group_edit_permissions'), permisosGrupos);
+
 router.get('/:id/permisos/:grupo_id', authMiddleware, permiso('user_edit_permissions'), getPermisosUserEnGrupo);
 router.put   ('/:id/permisos',      authMiddleware, permiso('user_edit_permissions'), actualizarPermisos);
-router.delete('/:id/permisos/:permiso_id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
+//router.delete('/:id/permisos/:permiso_id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
 module.exports = router;

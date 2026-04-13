@@ -1,11 +1,12 @@
 const express = require('express');
 const router  = express.Router();
 
-const { findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario, getMyGroups } = require('../controllers/grupo.controller');
+const { findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario, getMyGroups, permisosGrupos } = require('../controllers/grupo.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const {permiso, permisoGrupo} = require('../middlewares/permiso.middleware');
 
 //Permisos Generales
+router.get('/permisos-group', authMiddleware, permiso('group_edit_permissions'), permisosGrupos);
 router.get('/mis-grupos', authMiddleware, permiso('group_view'), getMyGroups);
 router.get('/', authMiddleware, permiso('group_manage'), findAll);
 router.post('/', authMiddleware, permiso('group_add'), create);

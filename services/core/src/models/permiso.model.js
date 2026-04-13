@@ -1,11 +1,67 @@
 const db = require('../../../shared/db-client');
 const pool = require('../../../../gateway/config/database');
 
+const PERMISOS_GENERALES = [
+    'user_activated',
+    'user_desactivated',
+    'user_edit_profile',
+    'user_view',
+    'users_view',
+    'group_view',
+    'group_add',
+    'ticket_view',
+    'user_edit',
+    'user_add',
+    'user_remove',
+    'user_edit_permissions',
+    'user_manage',
+    'group_manage',
+    'ticket_manage',
+];
+
+const PERMISOS_GRUPO = [
+    'group_edit',
+    'group_remove',
+    'group_add_member',
+    'group_remove_member',
+    'group_edit_permissions',
+    'ticket_view_all',
+    'ticket_view_owner',
+    'ticket_view_created',
+    'ticket_add',
+    'ticket_edit',
+    'ticket_delete',
+    'ticket_edit_state',
+    'ticket_comment',
+    'ticket_edit_comment',
+    'ticket_assign',
+];
+
 const PermisoModel = {
 
     async findAll() {
         const { rows } = await db.query(
             'SELECT * FROM public.permisos ORDER BY id'
+        );
+        return rows;
+    },
+
+    async findGenerales() {
+        const { rows } = await db.query(
+            `SELECT * FROM public.permisos
+            WHERE nombre = ANY($1)
+            ORDER BY id`,
+            [PERMISOS_GENERALES]
+        );
+        return rows;
+    },
+
+    async findDeGrupo() {
+        const { rows } = await db.query(
+            `SELECT * FROM public.permisos
+            WHERE nombre = ANY($1)
+            ORDER BY id`,
+            [PERMISOS_GRUPO]
         );
         return rows;
     },

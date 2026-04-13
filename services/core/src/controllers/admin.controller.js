@@ -220,6 +220,46 @@ const listarPermisos = async (req, res) => {
     }
 };
 
+const permisosUsuarios = async (req, res) => {
+    try {
+        const permisos = await PermisoModel.findGenerales();
+
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permisos obtenidos exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error listarPermisos:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+};
+
+const permisosGrupos = async (req, res) => {
+    try {
+        const permisos = await PermisoModel.findDeGrupo();
+
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permisos obtenidos exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error listarPermisos:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+};
+
 const revocarPermiso = async (req, res) => {
     try {
         const { id, permiso_id} = Number(req.params.id);
@@ -314,4 +354,4 @@ const actualizarPermisos = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, verUsuario, crearUsuario, editarUsuario, eliminarUsuario, listarPermisos, actualizarPermisos, getPermisosUser, getPermisosUserEnGrupo, revocarPermiso };
+module.exports = { listarUsuarios, verUsuario, crearUsuario, editarUsuario, eliminarUsuario, listarPermisos, actualizarPermisos, getPermisosUser, getPermisosUserEnGrupo, revocarPermiso, permisosGrupos, permisosUsuarios };

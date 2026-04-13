@@ -227,7 +227,7 @@ const removeMiembro = async (req, res) => {
 const permisoUsuarioGrupo = async (req, res) => {
     try {
         const { usuario_id, permisos } = req.body;
-        const { grupo_id } = req.params.id;
+        const grupo_id = req.params.id;
 
         await PermisoModel.sincronizarEnGrupo(usuario_id, grupo_id, permisos);
         const actualizados = await PermisoModel.findByUsuarioEnGrupo(usuario_id, grupo_id);
@@ -277,6 +277,26 @@ const permisosUsuario = async (req, res) => {
     }
 }
 
+const permisosGrupos = async (req, res) => {
+    try {
+        const permisos = await PermisoModel.findDeGrupo();
+
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permisos obtenidos exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error listarPermisos:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+};
+
 const getMyGroups = async (req, res) => {
     try {
         const usuario_id = req.usuario?.id || req.userId; 
@@ -315,4 +335,4 @@ const getMyGroups = async (req, res) => {
     }
 }
 
-module.exports = {findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario, getMyGroups};
+module.exports = {findAll, findById, getMiembros, create, update, newMiembro, softDelete, removeMiembro, permisoUsuarioGrupo, permisosUsuario, getMyGroups, permisosGrupos};
