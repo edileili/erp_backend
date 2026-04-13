@@ -11,7 +11,6 @@ const winstonLogger = winston.createLogger({
     ]
 });
 
-// Esta es la función que Express usará como middleware
 module.exports = (req, res, next) => {
     winstonLogger.info({
         method: req.method,

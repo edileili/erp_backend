@@ -1,4 +1,3 @@
-// ─── Schema: Registro de usuario ────────────────────────────────────────────
 const registroSchema = {
     type: 'object',
     required: ['usuario', 'email', 'contrasenia', 'nombre_com', 'direccion', 'fecha_nacimiento', 'telefono'],
@@ -46,7 +45,6 @@ const registroSchema = {
     },
 };
 
-// ─── Schema: Login ───────────────────────────────────────────────────────────
 const loginSchema = {
     type: 'object',
     required: ['email', 'contrasenia'],
@@ -63,7 +61,6 @@ const loginSchema = {
     },
 };
 
-// ─── Schema: Actualización parcial ──────────────────────────────────────────
 const actualizarSchema = {
     type: 'object',
     minProperties: 1,

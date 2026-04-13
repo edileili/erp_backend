@@ -3,7 +3,6 @@ const UsuarioModel = require('../models/usuario.model');
 const PermisoModel = require('../models/permiso.model');
 const db = require('../../../shared/db-client');
 
-// ── Helper: construye respuesta estandarizada ──────────────────────────────
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     const generalData = data.length > 0
         ? data.map(item => ({ message, ...item}))
@@ -18,7 +17,6 @@ const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     };
 };
 
-// ── GET /api/admin/usuarios ────────────────────────────────────────────────
 const listarUsuarios = async (req, res) => {
     try {
         const query = `
@@ -57,7 +55,6 @@ const listarUsuarios = async (req, res) => {
     }
 };
 
-// ── GET /api/admin/usuarios/:id ────────────────────────────────────────────
 const verUsuario = async (req, res) => {
     try {
         const usuario = await UsuarioModel.findById(req.params.id);
@@ -87,7 +84,6 @@ const verUsuario = async (req, res) => {
     }
 };
 
-// ── POST /api/admin/usuarios ───────────────────────────────────────────────
 const crearUsuario = async (req, res) => {
     try {
         const { usuario, email, contrasenia, nombre_com, direccion, fecha_nacimiento, telefono } = req.body;
@@ -124,7 +120,6 @@ const crearUsuario = async (req, res) => {
     }
 };
 
-// ── PUT /api/admin/usuarios/:id ────────────────────────────────────────────
 const editarUsuario = async (req, res) => {
     try {
         const camposAActualizar = { ...req.body };
@@ -158,11 +153,10 @@ const editarUsuario = async (req, res) => {
     }
 };
 
-// ── DELETE /api/admin/usuarios/:id ────────────────────────────────────────
 const eliminarUsuario = async (req, res) => {
     try {
         const adminId = req.usuario?.id || req.usuario?._id || req.userId;
-        const targetId = Number(req.params.id); // El ID del usuario a "eliminar"
+        const targetId = Number(req.params.id); 
 
         if (targetId === adminId) {
             return res.status(400).json(buildResponse({
@@ -199,7 +193,6 @@ const eliminarUsuario = async (req, res) => {
     }
 };
 
-// ── GET /api/admin/permisos ────────────────────────────────────────────────
 const listarPermisos = async (req, res) => {
     try {
         const permisos = await PermisoModel.findAll();
@@ -321,7 +314,6 @@ const getPermisosUserEnGrupo = async (req, res) => {
     }
 }
 
-// ── PUT /api/admin/usuarios/:id/permisos ──────────────────────────────────
 const actualizarPermisos = async (req, res) => {
     try {
         const id = req.params.id;

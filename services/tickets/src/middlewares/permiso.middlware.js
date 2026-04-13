@@ -16,7 +16,7 @@ const permiso = (nombrePermiso) => async (request, reply) => {
             WHERE pg.usuario_id = $1 
               AND p.nombre = ANY($2::text[])
             LIMIT 1`,
-            [userId, permisos]  // PostgreSQL recibe el array directo
+            [userId, permisos] 
         );
 
         if (rows.length === 0) {
@@ -50,7 +50,6 @@ const permisoGrupo = (permisosRequeridos) => {
         try {
             const grupoId = Number(req.params.id ?? req.params.grupo_id ?? req.body.grupo_id);
             const userId = req.headers['x-user-id'];
-            console.log("usuario:", userId, "grupo:", grupoId, "lista:", lista);
 
             if (!grupoId) {
                 return res.code(400).send({ message: 'grupo_id es requerido' });

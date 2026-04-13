@@ -3,11 +3,8 @@
 const fp = require('fastify-plugin');
  
 async function loggerPlugin(fastify, options) {
-    const pool = options.pool; // pg Pool compartido
- 
-    // ── HOOK: onSend ─────────────────────────────────────────────────────────
-    // Se ejecuta justo antes de enviar la respuesta, cuando ya tenemos:
-    // status code, tiempo transcurrido y (si hubo error) el mensaje.
+    const pool = options.pool; 
+
     fastify.addHook('onSend', async (request, reply, payload) => {
         if (request.url === '/health') return payload;
  

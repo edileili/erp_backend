@@ -2,7 +2,6 @@ const axios = require('axios');
 
 const GATEWAY_URL = process.env.GATEWAY_URL || 'http://127.0.0.1:3000';
 const INTERNAL_SECRET = (process.env.INTERNAL_SECRET || '').trim();
-console.log('Core cargando INTERNAL_SECRET, longitud:', INTERNAL_SECRET.length);
 
 const db = {
     async query(query, params = []) {

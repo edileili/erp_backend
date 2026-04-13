@@ -188,7 +188,6 @@ const softDelete = async (req, res) => {
             data: [eliminado],
         }));
     } catch (err) {
-        // Error lanzado por tickets activos
         if (err.message.includes('tickets activos')) {
             return res.status(409).json(buildResponse({
                 statusCode: 409,

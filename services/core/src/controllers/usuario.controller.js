@@ -5,7 +5,6 @@ require('dotenv').config();
 const UsuarioModel = require('../models/usuario.model');
 const PermisoModel = require('../models/permiso.model');
 
-// ── Helper: genera JWT ─────────────────────────────────────────────────────
 const generarToken = (usuario, permisos = []) =>
   jwt.sign(
     { id: usuario.id, usuario: usuario.usuario, email: usuario.email, 
@@ -14,7 +13,6 @@ const generarToken = (usuario, permisos = []) =>
     { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
   );
 
-// ── Helper: construye respuesta estandarizada ──────────────────────────────
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
   const generalData = data.length > 0
     ? data.map(item => ({ message, ...item}))
@@ -29,7 +27,6 @@ const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
   };
 };
 
-// ── POST /api/usuarios/registro ────────────────────────────────────────────
 const registro = async (req, res) => {
   try {
     const { usuario, email, contrasenia, nombre_com, direccion, fecha_nacimiento, telefono } = req.body;
@@ -56,7 +53,7 @@ const registro = async (req, res) => {
       message: 'Usuario registrado exitosamente',
       data: [{
         ...nuevoUsuario,
-        permisos: permisosAsignados.map(p => p.nombre), // solo los nombres, como en tu referencia
+        permisos: permisosAsignados.map(p => p.nombre),
       }],
     }));
   } catch (err) {
@@ -69,7 +66,6 @@ const registro = async (req, res) => {
   }
 };
 
-// ── POST /api/usuarios/login ───────────────────────────────────────────────
 const login = async (req, res) => {
   try {
     const { email, contrasenia } = req.body;
@@ -125,13 +121,11 @@ const login = async (req, res) => {
   }
 };
 
-// ── GET /api/usuarios/perfil ───────────────────────────────────────────────
 const perfil = async (req, res) => {
   try {
     const usuario_id = req.usuario?.id || req.usuario?._id || req.userId;
     
     if (!usuario_id) {
-        console.log("4. Error: No hay ID");
         return res.status(400).json({ error: "No se encontró ID en el token" });
     }
     const usuario = await UsuarioModel.findById(usuario_id);
@@ -152,7 +146,6 @@ const perfil = async (req, res) => {
   }
 };
 
-// ── PUT /api/usuarios/perfil ───────────────────────────────────────────────
 const actualizar = async (req, res) => {
   try {
     const camposAActualizar = { ...req.body };

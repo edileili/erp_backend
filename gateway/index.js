@@ -25,10 +25,6 @@ const fastify = Fastify({
     },
 });
 
-fastify.addHook('onRequest', async (request, reply) => {
-    console.log('[onRequest]', request.method, request.url);
-    console.log('[onRequest] Auth header:', request.headers['authorization'] || '(vacío)');
-});
 
 fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
     done(null, body);
@@ -41,12 +37,10 @@ fastify.addHook('preHandler', async (request, reply) => {
     if (url.startsWith('/internal/')) return; // ← esta es la nueva línea clave
     if (reply.sent) return;
 
-    console.log('[preHandler] LLAMANDO authMiddleware');
     const jwt = require('jsonwebtoken');
     const header = request.headers['authorization'] || '';
     const token = header.startsWith('Bearer ') ? header.slice(7) : null;
     
-    console.log('[preHandler] token:', token ? 'presente' : 'ausente');
     
     if (!token) {
         return reply.code(401).send({ error: 'Token requerido' });
@@ -54,8 +48,6 @@ fastify.addHook('preHandler', async (request, reply) => {
     
     try {
         const user = jwt.verify(token, process.env.JWT_SECRET);
-        console.log('[preHandler] JWT_SECRET length:', process.env.JWT_SECRET?.length);
-        console.log('[preHandler] user:', user.id);
         request.headers['x-user-id'] = String(user.id);
         request.headers['x-user-role'] = String(user.rol);
         request.user = user;

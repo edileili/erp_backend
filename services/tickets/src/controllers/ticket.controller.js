@@ -258,7 +258,6 @@ async function getById(req, reply) {
 async function create(req, reply) {
     try {
         const { titulo, descripcion, grupo_id, prioridad_id, asignado_id, fecha_cierre } = req.body;
-        console.log("body:", req.body);
         const creador_id = req.userId;
 
         const isDesactivated = await TicketModel.isDesactivated(creador_id);
@@ -345,7 +344,6 @@ async function cambiarEstado(req, reply) {
         const { estado_id } = req.body;
         const usuario_id  = req.userId;
 
-        console.log("usuario:", usuario_id, "ticket:", ticketId, "estado_id:", estado_id);
 
         const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket) {

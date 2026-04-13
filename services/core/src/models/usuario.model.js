@@ -56,7 +56,6 @@ const UsuarioModel = {
     const keys   = Object.keys(campos);
     const values = Object.values(campos);
 
-    // Construye dinámicamente: SET campo1 = $1, campo2 = $2 ...
     const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
 
     const { rows } = await db.query(
