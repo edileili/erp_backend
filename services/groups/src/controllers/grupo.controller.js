@@ -85,6 +85,14 @@ const create = async (req, res) => {
     try {
         const {nombre, descripcion} = req.body;
         const creador_id = req.usuario.id;
+
+        const isDesactivated = await GrupoModel.isDesactivated(creador_id);
+            if(isDesactivated) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401, inOpCode: 'UNAUTHORIZED',
+                message: 'Usuario desactivado',
+            }));
+            }
         if (!nombre || !creador_id) {
             return res.status(400).json(buildResponse({
                 statusCode: 400,

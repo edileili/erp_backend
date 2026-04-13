@@ -99,6 +99,19 @@ const GrupoModel = {
     },
 
     async addMiembro(grupo_id, email) {
+        const { rows: userRows } = await db.query('SELECT id FROM public.usuarios WHERE email = $1', [email]);
+    
+        if (userRows.length === 0) {
+            throw new Error('El usuario con ese correo no existe.');
+        }
+
+        const userId = userRows[0].id;
+
+        const bloqueado = await this.isDesactivated(userId);
+        if (bloqueado) {
+            throw new Error('El usuario se encuentra desactivado y no puede ser unido a grupos.');
+        }
+
         const query = `
         INSERT INTO public.grupo_miembros (grupo_id, usuario_id, fecha_ingreso)
         SELECT $1::integer, id, NOW()
@@ -117,6 +130,8 @@ const GrupoModel = {
     },
 
     async removeMember(grupo_id, usuario_id) {
+
+        await this.desactivarTicketsPorMiembro(grupo_id, usuario_id);
         await db.query(
             `DELETE FROM public.grupo_usuario_permisos WHERE grupo_id = $1 AND usuario_id = $2`,
             [grupo_id, usuario_id]
@@ -183,7 +198,29 @@ const GrupoModel = {
             [usuario_id]
         );
         return rows;
+    },
+
+    async isDesactivated(usuario_id) {
+        const { rows } = await db.query(
+        `SELECT 1 FROM public.permisos_generales up
+                INNER JOIN public.permisos p ON p.id = up.permiso_id
+                WHERE up.usuario_id = $1 AND p.nombre = 'user_desactivated'
+                LIMIT 1`,
+        [usuario_id]
+        );
+        return rows.length > 0;
+    },
+    
+    async desactivarTicketsPorMiembro(grupo_id, usuario_id) {
+        const ESTADO_BLOQUEADO = 5;
+        await db.query(
+            `UPDATE public.tickets 
+            SET estado_id = $1 
+            WHERE grupo_id = $2 AND (creador_id = $3 OR asignado_id = $3)`,
+            [ESTADO_BLOQUEADO, grupo_id, usuario_id]
+        );
     }
-};
+
+}
 
 module.exports = GrupoModel;

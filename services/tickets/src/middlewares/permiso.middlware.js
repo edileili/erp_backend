@@ -48,10 +48,12 @@ const permisoGrupo = (permisosRequeridos) => {
 
     return async (req, res) => {
         try {
-            const grupoId = req.params.id ?? req.params.grupo_id;
+            const grupoId = Number(req.params.id ?? req.params.grupo_id ?? req.body.grupo_id);
+            const userId = req.headers['x-user-id'];
+            console.log("usuario:", userId, "grupo:", grupoId, "lista:", lista);
 
             if (!grupoId) {
-                return res.status(400).json({ message: 'grupo_id es requerido' });
+                return res.code(400).send({ message: 'grupo_id es requerido' });
             }
 
             const { rows } = await db.query(
@@ -61,15 +63,15 @@ const permisoGrupo = (permisosRequeridos) => {
                   AND gup.grupo_id  = $2
                   AND p.nombre = ANY($3)
                 LIMIT 1`,
-                [req.userId, grupoId, lista]
+                [userId, grupoId, lista]
             );
 
             if (rows.length === 0) {
-                return res.status(403).json({ message: 'No tienes permisos en este grupo' });
+                return res.code(403).send({ message: 'No tienes permisos en este grupo' });
             }
         } catch (err) {
             console.error('Error permisoGrupo middleware:', err);
-            return res.status(500).json({ message: 'Error verificando permisos de grupo' });
+            return res.code(500).send({ message: 'Error verificando permisos de grupo' });
         }
     };
 };

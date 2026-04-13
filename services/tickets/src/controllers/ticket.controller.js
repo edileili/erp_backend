@@ -258,7 +258,16 @@ async function getById(req, reply) {
 async function create(req, reply) {
     try {
         const { titulo, descripcion, grupo_id, prioridad_id, asignado_id, fecha_cierre } = req.body;
+        console.log("body:", req.body);
         const creador_id = req.userId;
+
+        const isDesactivated = await TicketModel.isDesactivated(creador_id);
+            if(isDesactivated) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401, inOpCode: 'UNAUTHORIZED',
+                message: 'Usuario desactivado',
+            }));
+            }
 
         const nuevoTicket = await TicketModel.create({
             titulo,
@@ -332,11 +341,13 @@ async function update(req, reply) {
 
 async function cambiarEstado(req, reply) {
     try {
-        const { id }      = req.params;
+        const { ticketId }      = req.params;
         const { estado_id } = req.body;
         const usuario_id  = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        console.log("usuario:", usuario_id, "ticket:", ticketId, "estado_id:", estado_id);
+
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -353,13 +364,13 @@ async function cambiarEstado(req, reply) {
             }));
         }
 
-        const actualizado = await TicketModel.cambiarEstado(Number(id), Number(estado_id));
+        const actualizado = await TicketModel.cambiarEstado(Number(ticketId), Number(estado_id));
 
         const accionHistorial = Number(estado_id) === ESTADO.BLOQUEADO
             ? 'Ticket bloqueado (eliminado)'
             : `Estado cambiado a ID ${estado_id}`;
 
-        await TicketModel.registrarHistorial(id, usuario_id, accionHistorial);
+        await TicketModel.registrarHistorial(ticketId, usuario_id, accionHistorial);
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -379,11 +390,19 @@ async function cambiarEstado(req, reply) {
 
 async function asignar(req, reply) {
     try {
-        const { id }        = req.params;
+        const { ticketId } = req.params;
         const { asignado_id } = req.body;
         const usuario_id    = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const isDesactivated = await TicketModel.isDesactivated(asignado_id);
+            if(isDesactivated) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401, inOpCode: 'UNAUTHORIZED',
+                message: 'Usuario desactivado',
+            }));
+            }
+
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket || esBloqueado(ticket)) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -392,7 +411,7 @@ async function asignar(req, reply) {
             }));
         }
 
-        const actualizado = await TicketModel.update(Number(id), {
+        const actualizado = await TicketModel.update(Number(ticketId), {
             asignado_id: asignado_id ? Number(asignado_id) : null,
         });
 
@@ -512,6 +531,7 @@ async function remove(req, reply) {
             message:    'Error interno del servidor',
         }));
     }
+    
 }
 
 module.exports = { getAll, getByGrupo, getSinAsignar, getById, create, update,

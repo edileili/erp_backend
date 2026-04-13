@@ -120,7 +120,9 @@ async function ticketRoutes(fastify) {
     fastify.put('/:id',            { preHandler: [authMiddleware, permisoGrupo('ticket_edit')]        }, TicketController.update);
 
     // Cambiar estado del ticket
-    fastify.patch('/:id/estado',   { preHandler: [authMiddleware, permisoGrupo('ticket_edit_state')]  }, TicketController.cambiarEstado);
+    fastify.patch('/:ticketId/estado', { 
+        preHandler: [authMiddleware, permisoGrupo('ticket_edit_state')] 
+    }, TicketController.cambiarEstado);
 
     // Asignar / desasignar usuario al ticket
     fastify.patch('/:id/asignar',  { preHandler: [authMiddleware, permisoGrupo('ticket_assign')]      }, TicketController.asignar);
