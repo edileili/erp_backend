@@ -1,7 +1,13 @@
 require('dotenv').config();
 const fastify = require('fastify')({logger: true});
+const msLogger = require('./src/middlewares/msLogger.middleware');
+const {Pool} = require('pg');
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const PORT = process.env.TICKETS_PORT || 3002;
+
+fastify.addHook('onSend', msLogger('servicio-tickets', pool));
 
 fastify.addHook('preHandler', async (request) => {
     request.userId = request.headers['x-user-id'];

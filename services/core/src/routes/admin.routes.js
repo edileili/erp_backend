@@ -17,6 +17,8 @@ const validate         = require('../middlewares/validate.middleware');
 const { registroSchema, actualizarSchema } = require('../schemas/usuario.schema');
 
 router.get   ('/permisos',          authMiddleware, permiso('user_edit'), listarPermisos);
+router.get('/permisos-user', authMiddleware, permiso('user_edit_permissions'), permisosUsuarios);
+router.get('/permisos-group', authMiddleware, permiso('group_edit_permissions'), permisosGrupos);
 router.get   ('/',         authMiddleware, permiso('users_view'),    listarUsuarios);
 router.get   ('/:id',      authMiddleware, permiso('user_view'), verUsuario);
 router.post('/',  authMiddleware, validate(registroSchema), crearUsuario);
@@ -24,8 +26,6 @@ router.put   ('/:id',      authMiddleware, permiso('user_edit'),  validate(actua
 router.delete('/:id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
 router.get('/:id/permisos', authMiddleware, permiso('user_edit_permissions'), getPermisosUser);
-router.get('/:id/permisos-user', authMiddleware, permiso('user_edit_permissions'), permisosUsuarios);
-router.get('/:id/permisos-group', authMiddleware, permiso('group_edit_permissions'), permisosGrupos);
 
 router.get('/:id/permisos/:grupo_id', authMiddleware, permiso('user_edit_permissions'), getPermisosUserEnGrupo);
 router.put   ('/:id/permisos',      authMiddleware, permiso('user_edit_permissions'), actualizarPermisos);

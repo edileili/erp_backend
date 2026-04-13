@@ -1,9 +1,34 @@
 require('dotenv').config();
 const express      = require('express');
 const gruposRoutes = require('./routes/grupos.routes');
+const { Pool } = require('pg');
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app  = express();
 const PORT = process.env.GROUPS_PORT || 3003;
+
+const loggerMiddleware = require('./middlewares/logger.middleware');
+const msLogger = require('./middlewares/msLogger.middleware');
+app.use(loggerMiddleware); 
+
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', async () => {
+        // Simula el contrato que espera msLogger
+        const fakeRequest = {
+            url: req.url,
+            method: req.method,
+            headers: req.headers,
+            ip: req.ip,
+        };
+        const fakeReply = {
+            statusCode: res.statusCode,
+            elapsedTime: Date.now() - start,
+        };
+        await msLogger('servicio-grupos', pool)(fakeRequest, fakeReply, '{}');
+    });
+    next();
+});
 
 app.use(express.json());
 

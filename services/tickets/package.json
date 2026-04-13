@@ -10,7 +10,8 @@
         "axios": "^1.7.2",
         "backend": "file:../..",
         "dotenv": "^16.4.5",
-        "fastify": "^4.28.0"
+        "fastify": "^4.28.0",
+        "winston": "^3.19.0"
     },
     "devDependencies": {
         "nodemon": "^3.1.4"

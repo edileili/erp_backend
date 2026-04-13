@@ -5,6 +5,10 @@ const fastifyRateLimit = require('@fastify/rate-limit');
 const fastifyCors = require('@fastify/cors');
 const fastifyHelmet = require('@fastify/helmet');
 const http = require('http');
+const msLogger = require('./middlewares/msLogger.middleware');
+const {Pool} = require('pg');
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 const authMiddleware = require('./middlewares/auth.middleware');
 const internalAuthMiddleware = require('./middlewares/internalAuth.middleware');
@@ -140,6 +144,8 @@ const start = async () => {
             error: 'Demasiadas peticiones, intenta más tarde',
         }),
     });
+
+    fastify.addHook('onSend', msLogger('api-gateway', pool));
 
     fastify.get('/health', async () => ({ status: 'ok', ts: new Date() }));
 

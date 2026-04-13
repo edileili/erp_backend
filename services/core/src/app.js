@@ -1,13 +1,37 @@
 require('dotenv').config();
 const express = require('express');
 
-// Rutas (igual que antes, sin cambios en las rutas mismas)
 const authRoutes = require('./routes/auth.routes');
 const usuariosRoutes = require('./routes/usuarios.routes');
 const adminRoutes    = require('./routes/admin.routes');
+const { Pool } = require('pg');
 
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app  = express();
 const PORT = process.env.CORE_PORT || 3001;
+
+const loggerMiddleware = require('./middlewares/logger.middleware');
+const msLogger = require('./middlewares/msLogger.middleware');
+app.use(loggerMiddleware); 
+
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', async () => {
+        // Simula el contrato que espera msLogger
+        const fakeRequest = {
+            url: req.url,
+            method: req.method,
+            headers: req.headers,
+            ip: req.ip,
+        };
+        const fakeReply = {
+            statusCode: res.statusCode,
+            elapsedTime: Date.now() - start,
+        };
+        await msLogger('servicio-usuarios', pool)(fakeRequest, fakeReply, '{}');
+    });
+    next();
+});
 
 app.use(express.json());
 
