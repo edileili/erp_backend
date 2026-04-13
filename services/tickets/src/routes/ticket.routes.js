@@ -1,5 +1,5 @@
 const TicketController = require('../controllers/ticket.controller');
-const permiso = require('../middlewares/permiso.middlware');
+const {permiso, permisoGrupo} = require('../middlewares/permiso.middlware');
 const authMiddleware = require('../middlewares/auth.middleware');
 
 const getByGrupoSchema = {
@@ -93,80 +93,48 @@ async function ticketRoutes(fastify) {
     // Listar todos los tickets
     fastify.get('/', {
         schema:     getAllSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
+        preHandler: [authMiddleware, permiso('ticket_manage')],
     }, TicketController.getAll);
 
     // Listar tickets de un grupo específico
-    fastify.get('/grupo/:grupo_id', {
-        schema:     getByGrupoSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
-    }, TicketController.getByGrupo);
+    fastify.get('/grupo/:grupo_id',       { preHandler: [authMiddleware, permisoGrupo('ticket_view_all')]     }, TicketController.getByGrupo);
 
     // Tickets sin asignar de un grupo
-    fastify.get('/sin-asignar/:grupo_id', {
-        schema:     sinAsignarSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
-    }, TicketController.getSinAsignar);
+    fastify.get('/sin-asignar/:grupo_id', { preHandler: [authMiddleware, permisoGrupo('ticket_view_all')]     }, TicketController.getSinAsignar);
 
-    fastify.get('/alta-prioridad/:grupo_id', {
-        schema:     sinAsignarSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
-    }, TicketController.getAltaPrioridad);
+    fastify.get('/alta-prioridad/:grupo_id',{ preHandler: [authMiddleware, permisoGrupo('ticket_view_all')]   }, TicketController.getAltaPrioridad);
 
-    fastify.get('/creados/:grupo_id', {
-        schema:     sinAsignarSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
-    }, TicketController.getTicketsCreados);
+    fastify.get('/creados/:grupo_id',     { preHandler: [authMiddleware, permisoGrupo('ticket_view_created')] }, TicketController.getTicketsCreados);
 
-    fastify.get('/asignados/:grupo_id', {
-        schema:     sinAsignarSchema,
-        preHandler: [authMiddleware, permiso('tickets_view')],
-    }, TicketController.getTicketsAsignados);
+    fastify.get('/asignados/:grupo_id',   { preHandler: [authMiddleware, permisoGrupo('ticket_view_owner')]   }, TicketController.getTicketsAsignados);
+
+    fastify.get('/mis-tickets/:grupo_id', { preHandler: [authMiddleware, permisoGrupo(['ticket_view_owner', 'ticket_view_created'])] }, TicketController.getMisTickets);
 
     // Detalle de un ticket (incluye comentarios e historial)
-    fastify.get('/:id', {
-        preHandler: [authMiddleware, permiso('ticket_view')],
-    }, TicketController.getById);
+    fastify.get('/:id',            { preHandler: [authMiddleware, permiso('ticket_view')]  }, TicketController.getById);
 
     // Crear ticket
-    fastify.post('/', {
-        schema:     createSchema,
-        preHandler: [authMiddleware, permiso('ticket_add')],
-    }, TicketController.create);
+    fastify.post('/',              { preHandler: [authMiddleware, permisoGrupo('ticket_add')]         }, TicketController.create);
 
     // Actualizar campos del ticket
-    fastify.put('/:id', {
-        schema:     updateSchema,
-        preHandler: [authMiddleware, permiso('ticket_edit')],
-    }, TicketController.update);
+    fastify.put('/:id',            { preHandler: [authMiddleware, permisoGrupo('ticket_edit')]        }, TicketController.update);
 
     // Cambiar estado del ticket
-    fastify.patch('/:id/estado', {
-        schema:     cambiarEstadoSchema,
-        preHandler: [authMiddleware, permiso('ticket_edit_state')],
+    fastify.patch('/:ticketId/estado', { 
+        preHandler: [authMiddleware, permisoGrupo('ticket_edit_state')] 
     }, TicketController.cambiarEstado);
 
     // Asignar / desasignar usuario al ticket
-    fastify.patch('/:id/asignar', {
-        schema:     asignarSchema,
-        preHandler: [authMiddleware, permiso('ticket_edit')],
-    }, TicketController.asignar);
+    fastify.patch('/:id/asignar',  { preHandler: [authMiddleware, permisoGrupo('ticket_assign')]      }, TicketController.asignar);
 
     // Agregar comentario a un ticket
-    fastify.post('/:id/comentarios', {
-        schema:     comentarioSchema,
-        preHandler: [authMiddleware, permiso('ticket_comment')],
-    }, TicketController.agregarComentario);
+    fastify.post('/:id/comentarios',{ preHandler: [authMiddleware, permisoGrupo('ticket_comment')]    }, TicketController.agregarComentario);
 
     // Obtener historial de un ticket
-    fastify.get('/:id/historial', {
-        preHandler: [authMiddleware, permiso('ticket_view')],
-    }, TicketController.getHistorial);
+    fastify.get('/:id/historial',  { preHandler: [authMiddleware, permiso('ticket_view')]  }, TicketController.getHistorial);
 
     // Eliminar ticket (soft delete → estado BLOQUEADO)
-    fastify.delete('/:id', {
-        preHandler: [authMiddleware, permiso('ticket_delete')],
-    }, TicketController.remove);
+    fastify.delete('/:id',         { preHandler: [authMiddleware, permisoGrupo('ticket_delete')]      }, TicketController.remove);
 }
 
 module.exports = ticketRoutes;

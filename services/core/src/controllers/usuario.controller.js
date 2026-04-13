@@ -90,6 +90,14 @@ const login = async (req, res) => {
       }));
     }
 
+    const isDesactivated = await UsuarioModel.isDesactivated(usuario.id);
+    if(isDesactivated) {
+      return res.status(401).json(buildResponse({
+        statusCode: 401, inOpCode: 'UNAUTHORIZED',
+        message: 'Usuario desactivado',
+      }));
+    }
+
     const permisos = await PermisoModel.findByUsuario(usuario.id);
     const nombresPermisos = permisos.map(p => p.nombre);
 
@@ -120,15 +128,14 @@ const login = async (req, res) => {
 // ── GET /api/usuarios/perfil ───────────────────────────────────────────────
 const perfil = async (req, res) => {
   try {
-    const usuario = await UsuarioModel.findById(req.params.id);
-    if (!usuario) {
-      return res.status(404).json(buildResponse({
-        statusCode: 404,
-        inOpCode: 'NOT_FOUND',
-        message: 'Usuario no encontrado',
-      }));
+    const usuario_id = req.usuario?.id || req.usuario?._id || req.userId;
+    
+    if (!usuario_id) {
+        console.log("4. Error: No hay ID");
+        return res.status(400).json({ error: "No se encontró ID en el token" });
     }
-
+    const usuario = await UsuarioModel.findById(usuario_id);
+    
     return res.status(200).json(buildResponse({
       statusCode: 200,
       inOpCode: 'OK',
@@ -148,7 +155,13 @@ const perfil = async (req, res) => {
 // ── PUT /api/usuarios/perfil ───────────────────────────────────────────────
 const actualizar = async (req, res) => {
   try {
-    const usuarioActualizado = await UsuarioModel.update(req.usuario.id, req.body);
+    const camposAActualizar = { ...req.body };
+
+    if (camposAActualizar.contrasenia) {
+      const saltRounds = 10;
+      camposAActualizar.contrasenia = await bcrypt.hash(camposAActualizar.contrasenia, saltRounds);
+    }
+    const usuarioActualizado = await UsuarioModel.update(req.usuario.id, camposAActualizar);
     if (!usuarioActualizado) {
       return res.status(404).json(buildResponse({
         statusCode: 404,

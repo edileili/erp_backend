@@ -8,18 +8,22 @@ const permiso = (nombrePermiso) => async (request, reply) => {
             return reply.code(401).send({ error: 'Usuario no autenticado' });
         }
 
+        const permisos = Array.isArray(nombrePermiso) ? nombrePermiso : [nombrePermiso];
+
         const { rows } = await db.query(
             `SELECT 1 FROM public.permisos_generales pg
             JOIN public.permisos p ON p.id = pg.permiso_id
-            WHERE pg.usuario_id = $1 AND p.nombre = $2 LIMIT 1`,
-            [userId, nombrePermiso]
+            WHERE pg.usuario_id = $1 
+              AND p.nombre = ANY($2::text[])
+            LIMIT 1`,
+            [userId, permisos]  // PostgreSQL recibe el array directo
         );
 
         if (rows.length === 0) {
             return reply.code(403).send({
                 statusCode: 403,
                 inOpCode: 'FORBIDDEN',
-                message: `No tienes permiso para realizar esta acción (${nombrePermiso})`,
+                message: `No tienes permiso para realizar esta acción (${permisos.join(', ')})`,
                 data: [],
                 total: 0,
                 timestamp: new Date().toISOString(),
@@ -39,4 +43,37 @@ const permiso = (nombrePermiso) => async (request, reply) => {
     }
 };
 
-module.exports = permiso;
+const permisoGrupo = (permisosRequeridos) => {
+    const lista = Array.isArray(permisosRequeridos) ? permisosRequeridos : [permisosRequeridos];
+
+    return async (req, res) => {
+        try {
+            const grupoId = Number(req.params.id ?? req.params.grupo_id ?? req.body.grupo_id);
+            const userId = req.headers['x-user-id'];
+            console.log("usuario:", userId, "grupo:", grupoId, "lista:", lista);
+
+            if (!grupoId) {
+                return res.code(400).send({ message: 'grupo_id es requerido' });
+            }
+
+            const { rows } = await db.query(
+                `SELECT 1 FROM public.grupo_usuario_permisos gup
+                INNER JOIN public.permisos p ON p.id = gup.permiso_id
+                WHERE gup.usuario_id = $1
+                  AND gup.grupo_id  = $2
+                  AND p.nombre = ANY($3)
+                LIMIT 1`,
+                [userId, grupoId, lista]
+            );
+
+            if (rows.length === 0) {
+                return res.code(403).send({ message: 'No tienes permisos en este grupo' });
+            }
+        } catch (err) {
+            console.error('Error permisoGrupo middleware:', err);
+            return res.code(500).send({ message: 'Error verificando permisos de grupo' });
+        }
+    };
+};
+
+module.exports = {permiso, permisoGrupo};

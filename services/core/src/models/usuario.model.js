@@ -33,10 +33,9 @@ const UsuarioModel = {
   async assignGeneralPermissions(usuario_id, permisosNombres = [
       'group_view',
       'ticket_view',
-      'ticket_edit_state',
-      'ticket_add',
       'user_view',
-      'user_edit'
+      'user_edit_profile',
+      'user_activated'
   ]) {
       const query = `
         INSERT INTO public.permisos_generales (usuario_id, permiso_id)
@@ -76,6 +75,17 @@ const UsuarioModel = {
     );
     return rows.length > 0;
   },
+
+  async isDesactivated(usuario_id) {
+    const { rows } = await db.query(
+      `SELECT 1 FROM public.permisos_generales up
+            INNER JOIN public.permisos p ON p.id = up.permiso_id
+            WHERE up.usuario_id = $1 AND p.nombre = 'user_desactivated'
+            LIMIT 1`,
+      [usuario_id]
+    );
+    return rows.length > 0;
+  }
 };
 
 module.exports = UsuarioModel;

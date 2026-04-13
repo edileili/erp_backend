@@ -5,28 +5,30 @@ const {
   listarUsuarios, verUsuario, crearUsuario,
   editarUsuario, eliminarUsuario,
   listarPermisos, actualizarPermisos,
+  getPermisosUser,
+  getPermisosUserEnGrupo,
+  permisosUsuarios,
+  permisosGrupos,
 } = require('../controllers/admin.controller');
 
 const authMiddleware   = require('../middlewares/auth.middleware');
-const permiso          = require('../middlewares/permiso.middleware');
+const {permiso}          = require('../middlewares/permiso.middleware');
 const validate         = require('../middlewares/validate.middleware');
 const { registroSchema, actualizarSchema } = require('../schemas/usuario.schema');
 
-// ── CRUD Usuarios ──────────────────────────────────────────────────────────
+router.get   ('/permisos',          authMiddleware, permiso('user_edit'), listarPermisos);
 router.get   ('/',         authMiddleware, permiso('users_view'),    listarUsuarios);
 router.get   ('/:id',      authMiddleware, permiso('user_view'), verUsuario);
-router.post('/',  validate(registroSchema), crearUsuario);
+router.post('/',  authMiddleware, validate(registroSchema), crearUsuario);
 router.put   ('/:id',      authMiddleware, permiso('user_edit'),  validate(actualizarSchema), editarUsuario);
 router.delete('/:id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
-// ── Gestión de permisos ────────────────────────────────────────────────────
-router.get   ('/permisos',          authMiddleware, permiso('user_edit'), listarPermisos);
-router.put   ('/:id/permisos',      authMiddleware, permiso('user_edit'), actualizarPermisos);
-/*
-router.get   ('/',         authMiddleware, permiso('usuarios:leer'),    listarUsuarios);
-router.get   ('/:id',      authMiddleware, permiso('usuarios:leer'), verUsuario);
-router.post('/', authMiddleware, permiso('user_edit'), validate(registroSchema), crearUsuario);
-router.put   ('/:id',      authMiddleware, permiso('usuarios:editar'),  validate(actualizarSchema), editarUsuario);
-router.delete('/:id',      authMiddleware, permiso('usuarios:eliminar'),eliminarUsuario);
-*/
+router.get('/:id/permisos', authMiddleware, permiso('user_edit_permissions'), getPermisosUser);
+router.get('/:id/permisos-user', authMiddleware, permiso('user_edit_permissions'), permisosUsuarios);
+router.get('/:id/permisos-group', authMiddleware, permiso('group_edit_permissions'), permisosGrupos);
+
+router.get('/:id/permisos/:grupo_id', authMiddleware, permiso('user_edit_permissions'), getPermisosUserEnGrupo);
+router.put   ('/:id/permisos',      authMiddleware, permiso('user_edit_permissions'), actualizarPermisos);
+//router.delete('/:id/permisos/:permiso_id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
+
 module.exports = router;

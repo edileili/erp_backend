@@ -72,6 +72,7 @@ const actualizarSchema = {
         usuario: { type: 'string', minLength: 3, maxLength: 50 },
         email: { type: 'string', format: 'email' },
         nombre_com: { type: 'string', minLength: 2, maxLength: 100 },
+        contrasenia: { type: 'string', minLength: 8, maxLength: 100, description: 'Mínimo 8 caracteres', },
         direccion: { type: 'string', minLength: 5, maxLength: 255 },
         fecha_nacimiento: { type: 'string', format: 'date-time' },
         telefono: { type: 'number', minimum: 1000000000, maximum: 9999999999 },

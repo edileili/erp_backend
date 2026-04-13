@@ -1,4 +1,5 @@
 const TicketModel = require('./../models/ticket.model');
+const db = require('../../../shared/db-client'); 
 
 const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
     const generalData = data.length > 0
@@ -83,12 +84,59 @@ async function getByGrupo(req, reply) {
     }
 }
 
+const getMisTickets = async (req, reply) => {
+    const { grupo_id } = req.params;
+    const usuario_id = req.user?.id || req.usuario?.id || req.userId;
+
+    if (!usuario_id) {
+        return reply.code(401).send({ error: 'No se pudo identificar al usuario' });
+    }
+
+    const { rows: permisosRows } = await db.query(
+        `SELECT p.nombre FROM public.grupo_usuario_permisos gup
+        JOIN public.permisos p ON p.id = gup.permiso_id
+        WHERE gup.usuario_id = $1
+            AND gup.grupo_id = $2
+            AND p.nombre = ANY($3::text[])`,
+        [usuario_id, grupo_id, ['ticket_view_owner', 'ticket_view_created']]
+    );
+
+    const permisos = permisosRows.map(r => r.nombre);
+    const tieneViewOwner   = permisos.includes('ticket_view_owner');
+    const tieneViewCreated = permisos.includes('ticket_view_created');
+
+    try {
+        const resultados = await Promise.all([
+            tieneViewOwner   ? TicketModel.findTicketsAsignados(usuario_id, grupo_id) : [],
+            tieneViewCreated ? TicketModel.findTicketsCreados(usuario_id, grupo_id)   : [],
+        ]);
+        const mapa = new Map();
+        resultados.flat().forEach(t => mapa.set(t.id, t));
+        const tickets = [...mapa.values()];
+
+        return reply.code(201).send(buildResponse({
+            statusCode: 201,
+            inOpCode:   'OK',
+            message:    'Tickets obtenidos exitosamente',
+            data:       tickets,
+        }));
+
+    } catch (error) {
+        req.log.error('Error al obtener mis tickets:', error);
+        return reply.status(500).send(buildResponse({
+            statusCode: 500,
+            inOpCode:   'INTERNAL_ERROR',
+            message:    'Error interno del servidor',
+        }));
+    }
+};
+
 async function getSinAsignar(req, reply) {
     try {
         const { grupo_id } = req.params;
         const tickets = await TicketModel.findSinAsignar(Number(grupo_id));
 
-        return reply.status(200).send(buildResponse({
+        return reply.code(200).send(buildResponse({
             statusCode: 200,
             inOpCode:   'OK',
             message:    'Tickets sin asignar obtenidos exitosamente',
@@ -210,7 +258,16 @@ async function getById(req, reply) {
 async function create(req, reply) {
     try {
         const { titulo, descripcion, grupo_id, prioridad_id, asignado_id, fecha_cierre } = req.body;
+        console.log("body:", req.body);
         const creador_id = req.userId;
+
+        const isDesactivated = await TicketModel.isDesactivated(creador_id);
+            if(isDesactivated) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401, inOpCode: 'UNAUTHORIZED',
+                message: 'Usuario desactivado',
+            }));
+            }
 
         const nuevoTicket = await TicketModel.create({
             titulo,
@@ -284,11 +341,13 @@ async function update(req, reply) {
 
 async function cambiarEstado(req, reply) {
     try {
-        const { id }      = req.params;
+        const { ticketId }      = req.params;
         const { estado_id } = req.body;
         const usuario_id  = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        console.log("usuario:", usuario_id, "ticket:", ticketId, "estado_id:", estado_id);
+
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -305,13 +364,13 @@ async function cambiarEstado(req, reply) {
             }));
         }
 
-        const actualizado = await TicketModel.cambiarEstado(Number(id), Number(estado_id));
+        const actualizado = await TicketModel.cambiarEstado(Number(ticketId), Number(estado_id));
 
         const accionHistorial = Number(estado_id) === ESTADO.BLOQUEADO
             ? 'Ticket bloqueado (eliminado)'
             : `Estado cambiado a ID ${estado_id}`;
 
-        await TicketModel.registrarHistorial(id, usuario_id, accionHistorial);
+        await TicketModel.registrarHistorial(ticketId, usuario_id, accionHistorial);
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -331,11 +390,19 @@ async function cambiarEstado(req, reply) {
 
 async function asignar(req, reply) {
     try {
-        const { id }        = req.params;
+        const { ticketId } = req.params;
         const { asignado_id } = req.body;
         const usuario_id    = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const isDesactivated = await TicketModel.isDesactivated(asignado_id);
+            if(isDesactivated) {
+            return res.status(401).json(buildResponse({
+                statusCode: 401, inOpCode: 'UNAUTHORIZED',
+                message: 'Usuario desactivado',
+            }));
+            }
+
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket || esBloqueado(ticket)) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -344,7 +411,7 @@ async function asignar(req, reply) {
             }));
         }
 
-        const actualizado = await TicketModel.update(Number(id), {
+        const actualizado = await TicketModel.update(Number(ticketId), {
             asignado_id: asignado_id ? Number(asignado_id) : null,
         });
 
@@ -464,8 +531,9 @@ async function remove(req, reply) {
             message:    'Error interno del servidor',
         }));
     }
+    
 }
 
 module.exports = { getAll, getByGrupo, getSinAsignar, getById, create, update,
-    cambiarEstado, asignar, agregarComentario, getHistorial, remove, getAltaPrioridad, getTicketsAsignados, getTicketsCreados
+    cambiarEstado, asignar, agregarComentario, getHistorial, remove, getAltaPrioridad, getTicketsAsignados, getTicketsCreados, getMisTickets
 };
