@@ -127,17 +127,14 @@ const login = async (req, res) => {
 
 // ── GET /api/usuarios/perfil ───────────────────────────────────────────────
 const perfil = async (req, res) => {
-  console.log("2. Datos en req.usuario:", req.usuario);
   try {
     const usuario_id = req.usuario?.id || req.usuario?._id || req.userId;
-    console.log("3. Buscando ID:", usuario_id);
     
     if (!usuario_id) {
         console.log("4. Error: No hay ID");
         return res.status(400).json({ error: "No se encontró ID en el token" });
     }
     const usuario = await UsuarioModel.findById(usuario_id);
-    console.log("5. Resultado de DB:", usuario ? "Encontrado" : "No encontrado");
     
     return res.status(200).json(buildResponse({
       statusCode: 200,
@@ -158,7 +155,13 @@ const perfil = async (req, res) => {
 // ── PUT /api/usuarios/perfil ───────────────────────────────────────────────
 const actualizar = async (req, res) => {
   try {
-    const usuarioActualizado = await UsuarioModel.update(req.usuario.id, req.body);
+    const camposAActualizar = { ...req.body };
+
+    if (camposAActualizar.contrasenia) {
+      const saltRounds = 10;
+      camposAActualizar.contrasenia = await bcrypt.hash(camposAActualizar.contrasenia, saltRounds);
+    }
+    const usuarioActualizado = await UsuarioModel.update(req.usuario.id, camposAActualizar);
     if (!usuarioActualizado) {
       return res.status(404).json(buildResponse({
         statusCode: 404,

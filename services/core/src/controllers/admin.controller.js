@@ -21,10 +21,25 @@ const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
 // ── GET /api/admin/usuarios ────────────────────────────────────────────────
 const listarUsuarios = async (req, res) => {
     try {
-        const { rows } = await db.query(
-            `SELECT id, usuario, email, nombre_com, direccion, fecha_nacimiento, telefono, created_at
-            FROM public.usuarios ORDER BY id`
-        );
+        const query = `
+            SELECT 
+                u.id, 
+                u.usuario, 
+                u.email, 
+                u.nombre_com, 
+                -- Si NO existe el permiso 'user_desactivated', entonces está activo
+                NOT EXISTS (
+                    SELECT 1 
+                    FROM public.permisos_generales pg
+                    JOIN public.permisos p ON pg.permiso_id = p.id
+                    WHERE pg.usuario_id = u.id 
+                      AND p.nombre = 'user_desactivated'
+                ) AS activo
+            FROM public.usuarios u
+            ORDER BY u.id
+        `;
+
+        const { rows } = await db.query(query);
 
         return res.status(200).json(buildResponse({
             statusCode: 200,
@@ -112,7 +127,13 @@ const crearUsuario = async (req, res) => {
 // ── PUT /api/admin/usuarios/:id ────────────────────────────────────────────
 const editarUsuario = async (req, res) => {
     try {
-        const actualizado = await UsuarioModel.update(req.params.id, req.body);
+        const camposAActualizar = { ...req.body };
+            
+        if (camposAActualizar.contrasenia) {
+            const saltRounds = 10;
+            camposAActualizar.contrasenia = await bcrypt.hash(camposAActualizar.contrasenia, saltRounds);
+        }
+        const actualizado = await UsuarioModel.update(req.params.id, camposAActualizar);
         if (!actualizado) {
             return res.status(404).json(buildResponse({
                 statusCode: 404,
@@ -140,7 +161,10 @@ const editarUsuario = async (req, res) => {
 // ── DELETE /api/admin/usuarios/:id ────────────────────────────────────────
 const eliminarUsuario = async (req, res) => {
     try {
-        if (Number(req.params.id) === req.usuario.id) {
+        const adminId = req.usuario?.id || req.usuario?._id || req.userId;
+        const targetId = Number(req.params.id); // El ID del usuario a "eliminar"
+
+        if (targetId === adminId) {
             return res.status(400).json(buildResponse({
                 statusCode: 400,
                 inOpCode: 'BAD_REQUEST',
@@ -148,12 +172,11 @@ const eliminarUsuario = async (req, res) => {
             }));
         }
 
-        const { rowCount } = await db.query(
-            'DELETE FROM public.usuarios WHERE id = $1',
-            [req.params.id]
-        );
+        const filasGrupos = await PermisoModel.revocarEnGrupo(targetId);
+        const filasGenerales = await PermisoModel.revocarTodo(targetId);
+        await PermisoModel.desactivar(targetId);
 
-        if (rowCount === 0) {
+        if (filasGrupos === 0 && filasGenerales === 0) {
             return res.status(404).json(buildResponse({
                 statusCode: 404,
                 inOpCode: 'NOT_FOUND',
@@ -164,7 +187,7 @@ const eliminarUsuario = async (req, res) => {
         return res.status(200).json(buildResponse({
             statusCode: 200,
             inOpCode: 'DELETED',
-            message: 'Usuario eliminado exitosamente',
+            message: 'Usuario desactivado exitosamente',
         }));
     } catch (err) {
         console.error('Error eliminarUsuario:', err);
@@ -197,9 +220,71 @@ const listarPermisos = async (req, res) => {
     }
 };
 
+const revocarPermiso = async (req, res) => {
+    try {
+        const { id, permiso_id} = Number(req.params.id);
+        const permisos = await PermisoModel.revocar(id, permiso_id);
+
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permiso revocado exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error listarPermisos:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+};
+
+const getPermisosUser = async (req, res) => {
+    try {
+        const user = req.params.id;
+        const permisos = await PermisoModel.findByUsuario(user);
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permisos obtenidos exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error permisos usuario:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+}
+
+const getPermisosUserEnGrupo = async (req, res) => {
+    try {
+        const { id, grupo_id } = req.params;
+        const permisos = await PermisoModel.findByUsuarioEnGrupo(id, grupo_id);
+        return res.status(200).json(buildResponse({
+            statusCode: 200,
+            inOpCode: 'OK',
+            message: 'Permisos en grupo obtenidos exitosamente',
+            data: permisos,
+        }));
+    } catch (err) {
+        console.error('Error permisos usuario:', err);
+        return res.status(500).json(buildResponse({
+            statusCode: 500,
+            inOpCode: 'INTERNAL_ERROR',
+            message: 'Error interno del servidor',
+        }));
+    }
+}
+
 // ── PUT /api/admin/usuarios/:id/permisos ──────────────────────────────────
 const actualizarPermisos = async (req, res) => {
     try {
+        const id = req.params.id;
         const { permisos } = req.body;
 
         if (!Array.isArray(permisos)) {
@@ -210,8 +295,8 @@ const actualizarPermisos = async (req, res) => {
             }));
         }
 
-        await PermisoModel.sincronizar(req.params.id, permisos);
-        const actualizados = await PermisoModel.findByUsuario(req.params.id);
+        await PermisoModel.sincronizar(id, permisos);
+        const actualizados = await PermisoModel.findByUsuario(id);
 
         return res.status(200).json(buildResponse({
             statusCode: 200,
@@ -229,4 +314,4 @@ const actualizarPermisos = async (req, res) => {
     }
 };
 
-module.exports = { listarUsuarios, verUsuario, crearUsuario, editarUsuario, eliminarUsuario, listarPermisos, actualizarPermisos };
+module.exports = { listarUsuarios, verUsuario, crearUsuario, editarUsuario, eliminarUsuario, listarPermisos, actualizarPermisos, getPermisosUser, getPermisosUserEnGrupo, revocarPermiso };

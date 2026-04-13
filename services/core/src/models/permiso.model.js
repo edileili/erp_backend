@@ -1,4 +1,5 @@
 const db = require('../../../shared/db-client');
+const pool = require('../../../../gateway/config/database');
 
 const PermisoModel = {
 
@@ -43,27 +44,58 @@ const PermisoModel = {
         return rowCount > 0;
     },
 
+    async revocarTodoGrupos(usuarioId) {
+        const { rowCount } = await db.query(
+            `DELETE FROM public.grupo_usuario_permisos WHERE usuario_id = $1`,
+            [usuarioId]
+        );
+        return rowCount;
+    },
+
+    async revocarTodo(usuarioId) {
+        const { rowCount } = await db.query(
+            `DELETE FROM public.permisos_generales WHERE usuario_id = $1`,
+            [usuarioId]
+        );
+        return rowCount;
+    },
+
+    async desactivar(usuarioId) {
+        const { rowCount } = await db.query(
+            `INSERT INTO public.permisos_generales (usuario_id, permiso_id)
+            VALUES ($1, 30);`,
+            [usuarioId]
+        );
+        return rowCount > 0;
+    },
+
     //Reemplazar TODOS los permisos de un usuario
     async sincronizar(usuarioId, permisoIds = []) {
-        const client = await db.connect();
+        const client = await pool.connect(); 
+        
         try {
             await client.query('BEGIN');
+            
             await client.query(
                 'DELETE FROM public.permisos_generales WHERE usuario_id = $1',
                 [usuarioId]
             );
-            for (const permisoId of permisoIds) {
-                await client.query(
-                    'INSERT INTO public.permisos_generales (usuario_id, permiso_id) VALUES ($1, $2)',
-                    [usuarioId, permisoId]
-                );
+
+            if (permisoIds.length > 0) {
+                for (const permisoId of permisoIds) {
+                    await client.query(
+                        'INSERT INTO public.permisos_generales (usuario_id, permiso_id) VALUES ($1, $2)',
+                        [usuarioId, permisoId]
+                    );
+                }
             }
+            
             await client.query('COMMIT');
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
         } finally {
-            client.release();
+            if (client) client.release(); 
         }
     },
 
