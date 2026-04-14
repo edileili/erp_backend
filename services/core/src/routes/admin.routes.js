@@ -25,10 +25,10 @@ router.post('/',  authMiddleware, validate(registroSchema), crearUsuario);
 router.put   ('/:id',      authMiddleware, permiso('user_edit'),  validate(actualizarSchema), editarUsuario);
 router.delete('/:id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
-router.get('/:id/permisos', authMiddleware, permiso('user_edit_permissions'), getPermisosUser);
-
+router.get('/:id/permisos', authMiddleware, getPermisosUser);
+//traer permisos si tiene el permiso edit_permissions
 router.get('/:id/permisos/:grupo_id', authMiddleware, permiso('user_edit_permissions'), getPermisosUserEnGrupo);
-router.put   ('/:id/permisos',      authMiddleware, permiso('user_edit_permissions'), actualizarPermisos);
+router.put   ('/:id/permisos',      authMiddleware, actualizarPermisos);
 //router.delete('/:id/permisos/:permiso_id',      authMiddleware, permiso('user_remove'),eliminarUsuario);
 
 module.exports = router;

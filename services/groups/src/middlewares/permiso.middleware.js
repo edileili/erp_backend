@@ -1,13 +1,18 @@
 const PermisoModel = require('../models/permiso.model');
 
-const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => ({
-  statusCode,
-  inOpCode,
-  message,
-  data,
-  total: data.length,
-  timestamp: new Date().toISOString(),
-});
+const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
+    const generalData = data.length > 0
+        ? data.map(item => ({ message, ...item }))
+        : [{ message }];
+
+    return {
+        statusCode,
+        inOpCode,
+        data: generalData,
+        total: generalData.length,
+        timestamp: new Date().toISOString(),
+    };
+};
 
 const permiso = (nombrePermiso) => async (req, res, next) => {
   try {

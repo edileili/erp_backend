@@ -1,4 +1,19 @@
 const db = require('../../../shared/db-client'); 
+const PermisoModel = require('../models/permiso.model')
+
+const buildResponse = ({ statusCode, inOpCode, message, data = [] }) => {
+    const generalData = data.length > 0
+        ? data.map(item => ({ message, ...item }))
+        : [{ message }];
+
+    return {
+        statusCode,
+        inOpCode,
+        data: generalData,
+        total: generalData.length,
+        timestamp: new Date().toISOString(),
+    };
+};
 
 const permiso = (nombrePermiso) => async (request, reply) => {
     try {
@@ -48,29 +63,39 @@ const permisoGrupo = (permisosRequeridos) => {
 
     return async (req, res) => {
         try {
-            const grupoId = Number(req.params.id ?? req.params.grupo_id ?? req.body.grupo_id);
             const userId = req.headers['x-user-id'];
+            const manage = await PermisoModel.tienePermiso(userId, 'ticket_manage');
+            if (manage) return;
 
+            const grupoId = req.params.grupo_id ?? req.body?.grupo_id;
             if (!grupoId) {
-                return res.code(400).send({ message: 'grupo_id es requerido' });
+                return res.status(400).send(buildResponse({
+                    statusCode: 400,
+                    inOpCode: 'BAD_REQUEST',
+                    message: 'grupo_id es requerido',
+                }));
             }
 
-            const { rows } = await db.query(
-                `SELECT 1 FROM public.grupo_usuario_permisos gup
-                INNER JOIN public.permisos p ON p.id = gup.permiso_id
-                WHERE gup.usuario_id = $1
-                  AND gup.grupo_id  = $2
-                  AND p.nombre = ANY($3)
-                LIMIT 1`,
-                [userId, grupoId, lista]
-            );
-
-            if (rows.length === 0) {
-                return res.code(403).send({ message: 'No tienes permisos en este grupo' });
+            const tiene = await PermisoModel.tienePermisoEnGrupo(userId, grupoId, lista);
+            console.log("lista:", lista);
+            console.log("user:", userId);
+            console.log("grupo:", grupoId);
+            console.log("Tiene:", tiene);
+            if (!tiene) {
+                return res.status(403).send(buildResponse({
+                    statusCode: 403,
+                    inOpCode: 'FORBIDDEN',
+                    message: `No tienes permisos en este grupo`,
+                }));
             }
+
         } catch (err) {
             console.error('Error permisoGrupo middleware:', err);
-            return res.code(500).send({ message: 'Error verificando permisos de grupo' });
+            return res.status(500).send(buildResponse({
+                statusCode: 500,
+                inOpCode: 'INTERNAL_ERROR',
+                message: 'Error interno del servidor',
+            }));
         }
     };
 };

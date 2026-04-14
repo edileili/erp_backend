@@ -130,8 +130,8 @@ const start = async () => {
         credentials: true,
     });
     await fastify.register(fastifyRateLimit, {
-        max: 300,
-        timeWindow: '15 minutes',
+        max: 100,
+        timeWindow: 60 * 1000,
         errorResponseBuilder: () => ({
             error: 'Demasiadas peticiones, intenta más tarde',
         }),

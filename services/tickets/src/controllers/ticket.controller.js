@@ -222,9 +222,9 @@ async function getTicketsAsignados(req, reply) {
 // Devuelve el ticket con comentarios e historial incluidos
 async function getById(req, reply) {
     try {
-        const { id } = req.params;
+        const { ticketId } = req.params;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const ticket = await TicketModel.findById(Number(ticketId));
 
         if (!ticket || esBloqueado(ticket)) {
             return reply.status(404).send(buildResponse({
@@ -235,8 +235,8 @@ async function getById(req, reply) {
         }
 
         const [comentarios, historial] = await Promise.all([
-            TicketModel.findComentariosByTicket(id),
-            TicketModel.findHistorialByTicket(id),
+            TicketModel.findComentariosByTicket(ticketId),
+            TicketModel.findHistorialByTicket(ticketId),
         ]);
 
         return reply.status(200).send(buildResponse({
@@ -262,7 +262,7 @@ async function create(req, reply) {
 
         const isDesactivated = await TicketModel.isDesactivated(creador_id);
             if(isDesactivated) {
-            return res.status(401).json(buildResponse({
+            return reply.status(401).send(buildResponse({
                 statusCode: 401, inOpCode: 'UNAUTHORIZED',
                 message: 'Usuario desactivado',
             }));
@@ -299,10 +299,10 @@ async function create(req, reply) {
 
 async function update(req, reply) {
     try {
-        const { id }     = req.params;
+        const { ticketId }     = req.params;
         const usuario_id = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket || esBloqueado(ticket)) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -311,7 +311,7 @@ async function update(req, reply) {
             }));
         }
 
-        const actualizado = await TicketModel.update(Number(id), req.body);
+        const actualizado = await TicketModel.update(Number(ticketId), req.body);
         if (!actualizado) {
             return reply.status(400).send(buildResponse({
                 statusCode: 400,
@@ -320,7 +320,7 @@ async function update(req, reply) {
             }));
         }
 
-        await TicketModel.registrarHistorial(id, usuario_id, 'Ticket actualizado');
+        await TicketModel.registrarHistorial(ticketId, usuario_id, 'Ticket actualizado');
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -417,7 +417,7 @@ async function asignar(req, reply) {
             ? `Ticket asignado a usuario ID ${asignado_id}`
             : 'Ticket desasignado';
 
-        await TicketModel.registrarHistorial(id, usuario_id, accion);
+        await TicketModel.registrarHistorial(ticketId, usuario_id, accion);
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -437,11 +437,11 @@ async function asignar(req, reply) {
 
 async function agregarComentario(req, reply) {
     try {
-        const { id }        = req.params;
+        const { ticketId }        = req.params;
         const { comentario } = req.body;
         const usuario_id    = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket || esBloqueado(ticket)) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -450,8 +450,8 @@ async function agregarComentario(req, reply) {
             }));
         }
 
-        const nuevoComentario = await TicketModel.crearComentario(id, usuario_id, comentario.trim());
-        await TicketModel.registrarHistorial(id, usuario_id, 'Comentario agregado');
+        const nuevoComentario = await TicketModel.crearComentario(ticketId, usuario_id, comentario.trim());
+        await TicketModel.registrarHistorial(ticketId, usuario_id, 'Comentario agregado');
 
         return reply.status(201).send(buildResponse({
             statusCode: 201,
@@ -471,9 +471,9 @@ async function agregarComentario(req, reply) {
 
 async function getHistorial(req, reply) {
     try {
-        const { id } = req.params;
+        const { ticketId } = req.params;
 
-        const historial = await TicketModel.findHistorialByTicket(id);
+        const historial = await TicketModel.findHistorialByTicket(ticketId);
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
@@ -493,10 +493,10 @@ async function getHistorial(req, reply) {
 
 async function remove(req, reply) {
     try {
-        const { id }     = req.params;
+        const { ticketId }     = req.params;
         const usuario_id = req.userId;
 
-        const ticket = await TicketModel.findById(Number(id));
+        const ticket = await TicketModel.findById(Number(ticketId));
         if (!ticket) {
             return reply.status(404).send(buildResponse({
                 statusCode: 404,
@@ -513,8 +513,8 @@ async function remove(req, reply) {
             }));
         }
 
-        await TicketModel.cambiarEstado(Number(id), ESTADO.BLOQUEADO);
-        await TicketModel.registrarHistorial(id, usuario_id, 'Ticket bloqueado (eliminado)');
+        await TicketModel.cambiarEstado(Number(ticketId), ESTADO.BLOQUEADO);
+        await TicketModel.registrarHistorial(ticketId, usuario_id, 'Ticket bloqueado (eliminado)');
 
         return reply.status(200).send(buildResponse({
             statusCode: 200,
