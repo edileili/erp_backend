@@ -36,7 +36,7 @@ const TicketModel = {
                 u_asig.nombre_com AS asignado_a_nombre,
                 est.nombre        AS estado_actual,
                 prio.nombre       AS nivel_prioridad,
-                u_crea.nombre_com AS creador_nombre
+                u_crea.nombre_com AS creado_por_nombre
             FROM public.tickets t
             JOIN  public.grupos      g       ON t.grupo_id     = g.id
             LEFT  JOIN public.usuarios u_asig ON t.asignado_id = u_asig.id
